@@ -23,7 +23,8 @@
 #include "myio.h"
 #include "myprog.h"
 
-static int debug=0x08+0x04+0x02+0x01;
+//static int debug=0x08+0x04+0x02+0x01;
+static int debug=0;
 static int np, mp, nl, ier, lp;
 static int np1, np2, mp1, mp2;
 static int mp_l, mp_r, mp_b, mp_t;
@@ -41,7 +42,7 @@ static int n1, n2, ntp, ntm, ntv;
 static double a1, b1, a2, b2;
 static double x10, x20, r0, q0, tau0;
 static double x11, x12, x21, x22, x31, x32, k1, k2;
-static double u0, u1, tau1, tmax, epst;
+static double u0, u1, tau1, tmax, tq, epst;
 static double tv, u10, omg0, omg1, gt;
 
 
@@ -139,6 +140,7 @@ int main(int argc, char *argv[])
 		fscanf(Fi,"tau0=%le\n",&tau0);
 		fscanf(Fi,"tau1=%le\n",&tau1);
 		fscanf(Fi,"tmax=%le\n",&tmax);
+		fscanf(Fi,"tq=%le\n",&tq);
 		fscanf(Fi,"epst=%le\n",&epst);
 		fscanf(Fi,"n1=%d\n",&n1);
 		fscanf(Fi,"n2=%d\n",&n2);
@@ -175,14 +177,15 @@ int main(int argc, char *argv[])
 			buf.ddata[18] = tau0;
 			buf.ddata[19] = tau1;
 			buf.ddata[20] = tmax;
-			buf.ddata[21] = epst;
-			buf.idata[44] = n1; // количество €чеек сетки
-			buf.idata[45] = n2; // количество €чеек сетки
-			buf.idata[46] = ntp;
-			buf.idata[47] = ntm;
-			buf.idata[48] = lp;
+			buf.ddata[21] = tq;
+			buf.ddata[22] = epst;
+			buf.idata[100] = n1; // количество €чеек сетки
+			buf.idata[101] = n2; // количество €чеек сетки
+			buf.idata[102] = ntp; // через сколько итераций выводить информацию
+			buf.idata[103] = ntm; // максимальное количество итераций
+			buf.idata[104] = lp;
 		}
-		MPI_Bcast(buf.ddata,100,MPI_DOUBLE,0,MPI_COMM_WORLD); // Ѕрэдкаст начальных параметров
+		MPI_Bcast(buf.ddata,200,MPI_DOUBLE,0,MPI_COMM_WORLD); // Ѕрэдкаст начальных параметров
 		if (mp>0) {
 			a1   = buf.ddata[0]; // размеры сетки в условных единицах
 			b1   = buf.ddata[1]; // размеры сетки в условных единицах
@@ -205,12 +208,13 @@ int main(int argc, char *argv[])
 			tau0 = buf.ddata[18];
 			tau1 = buf.ddata[19];
 			tmax = buf.ddata[20];
-			epst = buf.ddata[21];
-			n1   = buf.idata[44]; // количество €чеек сетки
-			n2   = buf.idata[45]; // количество €чеек сетки
-			ntp  = buf.idata[46];
-			ntm  = buf.idata[47];
-			lp   = buf.idata[48];
+			tq   = buf.ddata[21];
+			epst = buf.ddata[22];
+			n1   = buf.idata[100]; // количество €чеек сетки
+			n2   = buf.idata[101]; // количество €чеек сетки
+			ntp  = buf.idata[102]; // через сколько итераций выводить информацию
+			ntm  = buf.idata[103]; // максимальное количество итераций
+			lp   = buf.idata[104];
 		}
 	}
 
@@ -219,7 +223,7 @@ int main(int argc, char *argv[])
 	fprintf(Fo,"a1=%le b1=%le a2=%le b2=%le\n",a1,b1,a2,b2);fflush(Fo);
 	fprintf(Fo,"x10=%le x20=%le r0=%le q0=%le tau0=%le\n",x10,x20,r0,q0,tau0);fflush(Fo);
 	fprintf(Fo,"x11=%le x12=%le x21=%le x22=%le x31=%le x32=%le k1=%le k2=%le\n",x11,x12,x21,x22,x31,x32,k1,k2);fflush(Fo);
-	fprintf(Fo,"u0=%le u1=%le tau1=%le tmax=%le epst=%le\n",u0,u1,tau1,tmax,epst);fflush(Fo);
+	fprintf(Fo,"u0=%le u1=%le tau1=%le tmax=%le tq=%le epst=%le\n",u0,u1,tau1,tmax,tq,epst);fflush(Fo);
 	fprintf(Fo,"n1=%d n2=%d ntp=%d ntm=%d lp=%d\n",n1,n2,ntp,ntm,lp);fflush(Fo);
 
 	t1 = MPI_Wtime(); // «амер времени начала работы программы
@@ -227,9 +231,11 @@ int main(int argc, char *argv[])
 	u10 = u1 - u0; omg0 = 1.0 / tau0; omg1 = 1.0 / tau1;
 	h1 = (b1-a1)/n1; h12 = h1 * h1;
 	h2 = (b2-a2)/n2; h22 = h2 * h2;
-	tau = 0.5 * dmin(h1,h2) / dmax(k1,k2); tau = dmin(tau,1.0/q0);
-	tau05 = 0.5 * tau; gam1 = tau05 / h12; gam2 = tau05 / h22;
-	s0 = dmin(tmax/tau,1000000000.0); ntm = imin(ntm,(int)s0);
+	//tau = 0.5 * dmin(h1,h2) / dmax(k1,k2); tau = dmin(tau,1.0/q0);
+	//tau05 = 0.5 * tau; gam1 = tau05 / h12; gam2 = tau05 / h22;
+	//tau = tmax/ntm;
+	tau = tmax*(1-tq)/(1-pow(tq,ntm));
+	//s0 = dmin(tmax/tau,1000000000.0); ntm = imin(ntm,(int)s0);
 
 	fprintf(Fo,"u10=%le omg0=%le omg1=%le\n",u10,omg0,omg1);
 	fprintf(Fo,"h1=%le h2=%le tau=%le ntm=%d\n",h1,h2,tau,ntm);
@@ -374,7 +380,7 @@ int main(int argc, char *argv[])
 		for (m=0; m<nc12; m++) yy0[m] = yy1[m];
 
 		// step 1:
-		tv += tau05; // ”величение временного параметра (третье измерение)
+		tv += tau; // ”величение временного параметра (третье измерение)
 		if (debug&0x01) { fprintf(Fo,"tv=%le\n",tv);fflush(Fo); }
 
 		// Ќј„јЋќ јЋ√ќ–»“ћј Ўј√ј
@@ -522,7 +528,7 @@ int main(int argc, char *argv[])
 			s0=yy1[m]-((i2==0)?(j2==0)?yy1[m]:rr_b[i1]:yy1[id1]);
 			s1=((i2==nc2m)?(j2==n2)?yy1[m]:rr_t[i1]:yy1[id2])-yy1[m]; 
 
-			yy2[m] = (1.0+tau05/2)*yy1[m]+bb2[m]*s1-aa2[m]*s0;
+			yy2[m] = (1.0+tau/2)*yy1[m]+bb2[m]*s1-aa2[m]*s0;
 		}
 
 		if (debug&0x04) { fprintf(Fo,"\t\tEnd first half by x2\n");fflush(Fo); }
@@ -593,7 +599,7 @@ int main(int argc, char *argv[])
 			s0=yy1[m]-((i1==0)?(j1==0)?yy1[m]:rr_l[i2]:yy1[id1]);
 			s1=((i1==nc1m)?(j1==n1)?yy1[m]:rr_r[i2]:yy1[id2])-yy1[m]; 
 
-			yy2[m] = (1.0+tau05/2)*yy1[m]+bb1[m]*s1-aa1[m]*s0;
+			yy2[m] = (1.0+tau/2)*yy1[m]+bb1[m]*s1-aa1[m]*s0;
 		}
 
 		if (debug&0x04) { fprintf(Fo,"\t\tEnd second half by x1\n");fflush(Fo); }
@@ -645,7 +651,7 @@ int main(int argc, char *argv[])
 
 			if (mp == 0) {
 				t2 = MPI_Wtime() - t1;
-				fprintf(stderr,"ntv=%d tv=%le gt=%le tcpu=%le\n",ntv,tv,gt,t2);fflush(stderr);
+				fprintf(stdout,"ntv=%d tv=%le gt=%le tcpu=%le\n",ntv,tv,gt,t2);fflush(stdout);
 			}
 		}
 
@@ -663,6 +669,7 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		tau *= tq;
 	} while ((ntv<ntm) && (gt>epst));
 
 	t1 = MPI_Wtime() - t1; // «амер времени от начала работы программы
@@ -673,8 +680,8 @@ int main(int argc, char *argv[])
 	fprintf(Fo,"ntv=%d tv=%le gt=%le time=%le\n",ntv,tv,gt,t1);fflush(Fo);
 
 	if (mp == 0) {
-		fprintf(stderr,"Grid=%dx%d n1=%d n2=%d ntv=%d tv=%le gt=%le tcpu=%le\n",
-		np1,np2,n1,n2,ntv,tv,gt,t1);fflush(stderr);
+		fprintf(stdout,"Grid=%dx%d n1=%d n2=%d ntv=%d tv=%le gt=%le tcpu=%le\n",
+		np1,np2,n1,n2,ntv,tv,gt,t1);fflush(stdout);
 	}
 
 	ier = fclose_m(&Fo);
