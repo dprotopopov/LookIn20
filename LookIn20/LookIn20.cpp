@@ -412,12 +412,13 @@ int main(int argc, char *argv[])
 
 			for (i2=0; i2<nc2; i2++) {
 				j2 = i21 + i2;
+				m = nc1 * i2 + i1;
 				prev = nc1 * i2 + i1 - nc1;
 				next = nc1 * i2 + i1 + nc1;
 				s1=(i2==nc2m)?(j2==n2m)?yy1[m]:rr_t[i2]:yy1[next];
 				s0=(i2==0)?(j2==0)?yy1[m]:rr_b[i2]:yy1[prev];
-//				yy2[m]=3*s1-2*yy1[m]-1*s0;
-				yy2[m]=0*s1+1*yy1[m]-1*s0;
+				yy2[m]=3*s1-2*yy1[m]-1*s0;
+//				yy2[m]=0*s1+1*yy1[m]-1*s0;
 			}
 		}
 
@@ -451,8 +452,8 @@ int main(int argc, char *argv[])
 				//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
 				//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
 				//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
-//				aa[i2] = 1.0; bb[i2] = -3.0; cc[i2] = -2.0; ff[i2] = yy2[m];
-				aa[i2] = 1.0; bb[i2] = 0.0; cc[i2] = 1.0; ff[i2] = yy2[m];
+				aa[i2] = 1.0; bb[i2] = -3.0; cc[i2] = -2.0; ff[i2] = yy2[m];
+//				aa[i2] = 1.0; bb[i2] = 0.0; cc[i2] = 1.0; ff[i2] = yy2[m];
 			}
 
 			if (mp == 0 && debug&0x02) { fprintf(stdout,"Begin prog_rightpn\n");fflush(stdout); }
