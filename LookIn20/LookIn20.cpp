@@ -99,7 +99,6 @@ int main(int argc, char *argv[])
 	double *xx1, *xx2, *aa1, *bb1, *aa2, *bb2, *yy0, *yy1, *yy2;
 	double *aa, *bb, *cc, *ff, *al, *y1, *y2, *y3, *y4;
 	double *ss_l, *rr_l, *ss_r, *rr_r, *ss_b, *rr_b, *ss_t, *rr_t;
-	int prev , next;
 	int id1, id2;
 
 	int ranks[128];
@@ -407,19 +406,17 @@ int main(int argc, char *argv[])
 		// Вычисляем дифференциал по оси x2
 		// коэффициенты -1,-2,3  выбраны просто из-за красоты (сумма=0)
 
-		for (i1=0; i1<nc1; i1++) {
+		for (m=0; m<nc12; m++) {
+			i1=m%nc1;
+			i2=m/nc1;
 			j1 = i11 + i1;
-
-			for (i2=0; i2<nc2; i2++) {
-				j2 = i21 + i2;
-				m = nc1 * i2 + i1;
-				prev = nc1 * i2 + i1 - nc1;
-				next = nc1 * i2 + i1 + nc1;
-				s1=(i2==nc2m)?(j2==n2m)?yy1[m]:rr_t[i2]:yy1[next];
-				s0=(i2==0)?(j2==0)?yy1[m]:rr_b[i2]:yy1[prev];
-				yy2[m]=3*s1-2*yy1[m]-1*s0;
-//				yy2[m]=0*s1+1*yy1[m]-1*s0;
-			}
+			j2 = i21 + i2;
+			id1 = nc1 * i2 + i1 - nc1; // Предыдущий элемент
+			id2 = nc1 * i2 + i1 + nc1; // Следующий элемент
+			s1=(i2==nc2m)?(j2==n2m)?yy1[m]:rr_t[i2]:yy1[id1];
+			s0=(i2==0)?(j2==0)?yy1[m]:rr_b[i2]:yy1[id2];
+			yy2[m]=3*s1-2*yy1[m]-1*s0;
+			//				yy2[m]=0*s1+1*yy1[m]-1*s0;
 		}
 
 		if (mp == 0 && debug&0x04) { fprintf(stdout,"\t\tEnd diff by x2\n");fflush(stdout); }
@@ -453,7 +450,7 @@ int main(int argc, char *argv[])
 				//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
 				//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
 				aa[i2] = 1.0; bb[i2] = -3.0; cc[i2] = -2.0; ff[i2] = yy2[m];
-//				aa[i2] = 1.0; bb[i2] = 0.0; cc[i2] = 1.0; ff[i2] = yy2[m];
+				//				aa[i2] = 1.0; bb[i2] = 0.0; cc[i2] = 1.0; ff[i2] = yy2[m];
 			}
 
 			if (mp == 0 && debug&0x02) { fprintf(stdout,"Begin prog_rightpn\n");fflush(stdout); }
@@ -485,7 +482,7 @@ int main(int argc, char *argv[])
 		//  = y[j+1/2](i1,i2) - B1(i1,i2)*(y[j+1/2](i1+1,i2  )-y[j+1/2](i1  ,i2  )) + A1(i1,i2)*(y[j+1/2](i1  ,i2  )-y[j+1/2](i1-1,i2  ))
 		//
 		//  (1+r/2)*y[j+1/2](i1,i2) + B1(i1,i2)*(y[j+1/2](i1+1,i2  )-y[j+1/2](i1  ,i2  )) - A1(i1,i2)*(y[j+1/2](i1  ,i2  )-y[j+1/2](i1-1,i2  )) =
-		//  = y[j+1](i1,i2) - B2(i1,i2)*(y[j+1](i1  ,i2+1)-y[j+1](i1  ,i2  )) - A2(i1,i2)*(y[j+1](i1  ,i2  )-y[j+1](i1  ,i2-1))
+		//  = y[j+1](i1,i2) - B2(i1,i2)*(y[j+1](i1  ,i2+1)-y[j+1](i1  ,i2  )) + A2(i1,i2)*(y[j+1](i1  ,i2  )-y[j+1](i1  ,i2-1))
 
 		// Начинаем вычислять вышеприведённую формулу
 
@@ -511,14 +508,15 @@ int main(int argc, char *argv[])
 
 		// Вычисляем полшага
 		// по столбцам x2
+		//  (1+r/2)*y[j+0](i1,i2) + B2(i1,i2)*(y[j+0](i1  ,i2+1)-y[j+0](i1  ,i2  )) - A2(i1,i2)*(y[j+0](i1  ,i2  )-y[j+0](i1  ,i2-1)) =
 
 		for (m=0; m<nc12; m++) {
 			i1=m%nc1;
 			i2=m/nc1;
 			j1 = i11 + i1;
 			j2 = i21 + i2;
-			id1=nc1*i2+i1-nc1;
-			id2=nc1*i2+i1+nc1;
+			id1=nc1*i2+i1-nc1; // Предыдущий элемент
+			id2=nc1*i2+i1+nc1; // Следующий элемент
 			s0=yy1[m]-((i2==0)?(j2==0)?yy1[m]:rr_b[i1]:yy1[id1]);
 			s1=((i2==nc2m)?(j2==n2m)?yy1[m]:rr_t[i1]:yy1[id2])-yy1[m]; 
 
@@ -530,6 +528,7 @@ int main(int argc, char *argv[])
 		// Восстанавливаем полшага
 		// применяем алгоритм прогона
 		// по строкам x1
+		//  = y[j+1/2](i1,i2) - B1(i1,i2)*(y[j+1/2](i1+1,i2  )-y[j+1/2](i1  ,i2  )) + A1(i1,i2)*(y[j+1/2](i1  ,i2  )-y[j+1/2](i1-1,i2  ))
 
 		if (mp == 0 && debug&0x04) { fprintf(stdout,"Begin restore first half by x1\n");fflush(stdout); }
 
@@ -578,14 +577,15 @@ int main(int argc, char *argv[])
 
 		// Вычисляем полшага
 		// по строкам x1
+		//  (1+r/2)*y[j+1/2](i1,i2) + B1(i1,i2)*(y[j+1/2](i1+1,i2  )-y[j+1/2](i1  ,i2  )) - A1(i1,i2)*(y[j+1/2](i1  ,i2  )-y[j+1/2](i1-1,i2  )) =
 
 		for (m=0; m<nc12; m++) {
 			i1=m%nc1;
 			i2=m/nc1;
 			j1 = i11 + i1;
 			j2 = i21 + i2;
-			id1=nc1*i2+i1-1;
-			id2=nc1*i2+i1+1;
+			id1=nc1*i2+i1-1; // Предыдущий элемент
+			id2=nc1*i2+i1+1; // Следующий элемент
 			s0=yy1[m]-((i1==0)?(j1==0)?yy1[m]:rr_l[i2]:yy1[id1]);
 			s1=((i1==nc1m)?(j1==n1m)?yy1[m]:rr_r[i2]:yy1[id2])-yy1[m]; 
 
@@ -597,6 +597,7 @@ int main(int argc, char *argv[])
 		// Восстанавливаем вторые полшага
 		// применяем алгоритм прогона
 		// по столбцам x2
+		//  = y[j+1](i1,i2) - B2(i1,i2)*(y[j+1](i1  ,i2+1)-y[j+1](i1  ,i2  )) + A2(i1,i2)*(y[j+1](i1  ,i2  )-y[j+1](i1  ,i2-1))
 
 		if (mp == 0 && debug&0x04) { fprintf(stdout,"Begin restore second half by x2\n");fflush(stdout); }
 
