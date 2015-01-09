@@ -1,0 +1,5 @@
+<Modules>
+  <Module PersistentId="6A63A12F-BBE8-487A-8E3E-EA63C045A772" ModuleId="LookIn20" />
+  <Module PersistentId="System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, mvid=c08d55d3-6463-439d-b112-60f6502ec141" ModuleId="System.Core" />
+  <Module PersistentId="C61179F5-3D6B-4143-B6B6-B643F30CA646" ModuleId="mpibitonic" />
+</Modules>
