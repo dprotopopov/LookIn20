@@ -404,7 +404,8 @@ int main(int argc, char *argv[])
 		if (mp == 0 && debug&0x02) { fprintf(stdout,"\t\tEnd BndAExch1D\n");fflush(stdout); }
 
 		// Вычисляем дифференциал по оси x2
-		// коэффициенты -1,-2,3  выбраны просто из-за красоты (сумма=0)
+		// коэффициенты -1,-2,3  выбраны просто из-за красоты (сумма=0) 
+		// (вычисленная величина равна учетверённому значению дифференциала)
 
 		for (m=0; m<nc12; m++) {
 			i1=m%nc1;
@@ -415,23 +416,23 @@ int main(int argc, char *argv[])
 			id2 = nc1 * i2 + i1 + nc1; // Следующий элемент
 			s1=(i2==nc2m)?(j2==n2m)?yy1[m]:rr_t[i2]:yy1[id1];
 			s0=(i2==0)?(j2==0)?yy1[m]:rr_b[i2]:yy1[id2];
-			yy2[m]=3*s1-2*yy1[m]-1*s0;
+			yy2[m]=3.0*s1-2.0*yy1[m]-1.0*s0;
 			//				yy2[m]=0*s1+1*yy1[m]-1*s0;
 		}
 
 		if (mp == 0 && debug&0x04) { fprintf(stdout,"\t\tEnd diff by x2\n");fflush(stdout); }
 
 		// Задаём граничные условия для производной по x2
-		// то есть присваиваем ноль
+		// то есть присваиваем ноль учетверённому дифференциалу
 		if (mp == 0 && debug&0x04) { fprintf(stdout,"Begin diff by x2 let zero\n");fflush(stdout); }
 
-		if (mp_l==0) {
+		if (mp_b<0) { // Если нет строк ниже
 			i2 = 0;
-			for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + i1; yy2[m]=g21(tv); }
+			for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + i1; yy2[m]=g21(tv)*4.0*h1; }
 		}
-		if (mp_r==0) {
+		if (mp_t<0) { // Если нет строк выше
 			i2 = nc2m; // nc2m = nc2-1
-			for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + i1; yy2[m]=g22(tv); }
+			for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + i1; yy2[m]=g22(tv)*4.0*h1; }
 		}
 
 		if (mp == 0 && debug&0x04) { fprintf(stdout,"\t\tEnd diff by x2 let zero\n");fflush(stdout); }
@@ -466,12 +467,12 @@ int main(int argc, char *argv[])
 		// Задаём граничные условия по x1
 		if (mp == 0 && debug&0x04) { fprintf(stdout,"Begin let by x1\n");fflush(stdout); }
 
-		if (mp_t==0) {
+		if (mp_l<0) { // Если нет колонок левее
 			i1 = 0;
 			for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + i1; yy1[m]=g11(tv); }
 		}
-		if (mp_b==0) {
-			i1 = nc2;
+		if (mp_r<0) { // Если нет колонок правее
+			i1 = nc1m;
 			for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + i1; yy1[m]=g12(tv); }
 		}
 		if (mp == 0 && debug&0x04) { fprintf(stdout,"\t\tEnd let by x1\n");fflush(stdout); }
