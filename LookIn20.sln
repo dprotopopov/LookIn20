@@ -3,6 +3,8 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2012
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "LookIn20", "LookIn20\LookIn20.vcxproj", "{6A63A12F-BBE8-487A-8E3E-EA63C045A772}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Dubowik12", "Dubowik12\Dubowik12.vcxproj", "{1E2CB499-1581-4512-B3A1-15F745DD9BA5}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -19,6 +21,14 @@ Global
 		{6A63A12F-BBE8-487A-8E3E-EA63C045A772}.Release|Win32.Build.0 = Release|x64
 		{6A63A12F-BBE8-487A-8E3E-EA63C045A772}.Release|x64.ActiveCfg = Release|x64
 		{6A63A12F-BBE8-487A-8E3E-EA63C045A772}.Release|x64.Build.0 = Release|x64
+		{1E2CB499-1581-4512-B3A1-15F745DD9BA5}.Debug|Win32.ActiveCfg = Debug|Win32
+		{1E2CB499-1581-4512-B3A1-15F745DD9BA5}.Debug|Win32.Build.0 = Debug|Win32
+		{1E2CB499-1581-4512-B3A1-15F745DD9BA5}.Debug|x64.ActiveCfg = Debug|x64
+		{1E2CB499-1581-4512-B3A1-15F745DD9BA5}.Debug|x64.Build.0 = Debug|x64
+		{1E2CB499-1581-4512-B3A1-15F745DD9BA5}.Release|Win32.ActiveCfg = Release|x64
+		{1E2CB499-1581-4512-B3A1-15F745DD9BA5}.Release|Win32.Build.0 = Release|x64
+		{1E2CB499-1581-4512-B3A1-15F745DD9BA5}.Release|x64.ActiveCfg = Release|x64
+		{1E2CB499-1581-4512-B3A1-15F745DD9BA5}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
