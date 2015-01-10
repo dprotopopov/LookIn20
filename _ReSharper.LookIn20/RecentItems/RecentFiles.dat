@@ -2,50 +2,50 @@
   <RecentFiles>
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myrand.c" caret="1020" fromTop="21" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myio.h" caret="0" fromTop="0" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myprog.h" caret="0" fromTop="0" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:mycom.h" caret="0" fromTop="0" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:mynet.h" caret="244" fromTop="11" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myio.c" caret="1254" fromTop="0" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myprog.c" caret="578" fromTop="18" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:mycom.c" caret="0" fromTop="0" />
     <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:mycom.c" caret="0" fromTop="0" />
     <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:mynet.c" caret="564" fromTop="14" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:mynet.c" caret="3731" fromTop="13" />
     <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.d" caret="136" fromTop="16" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.d" caret="212" fromTop="22" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24961" fromTop="15" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10213" fromTop="13" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myio.c" caret="1809" fromTop="9" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myprog.h" caret="0" fromTop="0" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myprog.c" caret="0" fromTop="0" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.d" caret="0" fromTop="0" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="1569" fromTop="9" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="8282" fromTop="3" />
   </RecentFiles>
   <RecentEdits>
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="5945" fromTop="17" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="5343" fromTop="21" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="9727" fromTop="7" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="1564" fromTop="15" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10638" fromTop="17" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="25668" fromTop="26" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="2474" fromTop="12" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24944" fromTop="17" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24944" fromTop="22" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="2386" fromTop="16" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="9247" fromTop="20" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24714" fromTop="113" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10533" fromTop="22" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10247" fromTop="13" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10245" fromTop="13" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24907" fromTop="10" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="2819" fromTop="10" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="25482" fromTop="25" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="25671" fromTop="26" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="2477" fromTop="12" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24947" fromTop="17" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24947" fromTop="22" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="2389" fromTop="16" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="9250" fromTop="20" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24717" fromTop="113" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10727" fromTop="22" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10444" fromTop="13" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10442" fromTop="13" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24910" fromTop="10" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="2822" fromTop="10" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="25485" fromTop="25" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.d" caret="172" fromTop="15" />
     <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.d" caret="127" fromTop="14" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.d" caret="206" fromTop="20" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="9879" fromTop="14" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10505" fromTop="20" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="9882" fromTop="14" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10699" fromTop="20" />
     <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="1756" fromTop="16" />
     <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="5341" fromTop="9" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="25246" fromTop="14" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10094" fromTop="9" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10203" fromTop="13" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24810" fromTop="5" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="25090" fromTop="12" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="25249" fromTop="14" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10291" fromTop="9" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="10400" fromTop="13" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="24813" fromTop="5" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="25093" fromTop="12" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="259" fromTop="4" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="5738" fromTop="6" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="1328" fromTop="7" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="8953" fromTop="13" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="8282" fromTop="3" />
   </RecentEdits>
 </RecentFiles>

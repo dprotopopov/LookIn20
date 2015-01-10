@@ -8,7 +8,7 @@
 //  u(x1,x2,0) = g0(x1,x2)
 //
 //  u(x1,x2,0) = g11(x1,x2) = u0, 
-//  u(b1,x2,t) = g12(t) = u0-u10*exp(-omg1*t)
+//  u(b1,x2,t) = g12(t) = u1 - u10*exp(-omg1*t)
 //  d/dx2 u(x1,a2,t) = g21(x1,t) = u0,
 //  d/dx2 u(x1,b2,t) = g22(x1,t) = u0,
 //
@@ -47,7 +47,7 @@ static double tv, u10, omg0, omg1, gt;
 
 double k(double x1, double x2);
 double k(double x1, double x2) {
-	double abcab[] = {x11, x12, x21, x22, x31, x32,x11, x12, x21, x22};
+	double abcab[] = {x11, x12, x21, x22, x31, x32, x11, x12, x21, x22};
 	int i;
 	for(i=0; i<3; i++){
 		double v0[] = {abcab[2*i+2]-abcab[2*i],abcab[2*i+3]-abcab[2*i+1]};

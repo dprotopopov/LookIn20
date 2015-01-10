@@ -202,7 +202,7 @@ int main(int argc, char *argv[])
 		y4 = (double*)(malloc(sizeof(double)*9*ncp));
 	}
 
-	// Буфферы для обмена с соседями
+	// Буферы для обмена с соседями
 	rr_l = (double*)(malloc(sizeof(double)));
 	ss_l = (double*)(malloc(sizeof(double)));
 	rr_r = (double*)(malloc(sizeof(double)));
@@ -286,6 +286,9 @@ int main(int argc, char *argv[])
 				cc[i] = 1.0 + tau + aa[i] + bb[i];
 			}
 
+			if(mp_l<0) { aa[0] = 0.0; bb[0] = 0.0; cc[0] = 1.0; }
+			if(mp_r<0) { aa[ncm] = 0.0; bb[ncm] = 0.0; cc[ncm] = 1.0; }
+
 			// Вычисляем значения правой части уравнения неявной схемы
 
 			for (i=0; i<nc; i++) y1[i] = r(y0[i])*y0[i];
@@ -310,6 +313,9 @@ int main(int argc, char *argv[])
 				s2 = (id2<nc)?k(y1[id2]):rr_r[0];
 				ff[i] = y0[i] + 1.0*(s2-s0)+0.0*(s1-s0);
 			}
+
+			if(mp_l<0) ff[0] = g1(tv+tau);
+			if(mp_r<0) ff[ncm] = g2(tv+tau);
 
 			// Находим y[j+1] алгоритмом прогона
 			if (np<2) ier = prog_right(nc,aa,bb,cc,ff,al,y1);
@@ -364,7 +370,7 @@ int main(int argc, char *argv[])
 			id2 = (nx+it*dnx-dnx)/gcdx;
 			for(i=0;(ii1%id2)+(id2*i)<ii2;i++) 
 				yy1[i]-=yy0[(ii1%id2)+(id2*i)];
-			
+
 			s0=0.0;
 			for(i=0;i<ncx;i++) s0=dmax(s0,dabs(yy1[i]));
 			MPI_Allreduce(&s0,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
