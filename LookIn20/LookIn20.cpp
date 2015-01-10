@@ -307,6 +307,7 @@ int main(int argc, char *argv[])
 		y4 = (double*)(malloc(sizeof(double)*9*ncp));
 	}
 
+	// Буфферы для обмена с соседями
 	rr_l = (double*)(malloc(sizeof(double)*nc2));
 	ss_l = (double*)(malloc(sizeof(double)*nc2));
 	rr_r = (double*)(malloc(sizeof(double)*nc2));

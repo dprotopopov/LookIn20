@@ -165,7 +165,7 @@ int main(int argc, char *argv[])
 
 	fprintf(Fo,"u10=%le omg0=%le omg1=%le\n",u10,omg0,omg1);
 	fprintf(Fo,"hx=%le tau=%le ntm=%d\n",hx,tau,ntm);
-	if (mp == 0) fprintf(stderr,"nx=%d hx=%le tau=%le ntm=%d\n",nx,hx,tau,ntm);
+	fprintf(Fo,"nx=%d hx=%le tau=%le ntm=%d\n",nx,hx,tau,ntm);
 
 	if (mp ==    0) mp_l = -1; else mp_l = mp - 1;
 	if (mp == np-1) mp_r = -1; else mp_r = mp + 1;
@@ -191,6 +191,7 @@ int main(int argc, char *argv[])
 		y4 = (double*)(malloc(sizeof(double)*9*ncp));
 	}
 
+	// Буфферы для обмена с соседями
 	rr_l = (double*)(malloc(sizeof(double)));
 	ss_l = (double*)(malloc(sizeof(double)));
 	rr_r = (double*)(malloc(sizeof(double)));
@@ -256,7 +257,7 @@ int main(int argc, char *argv[])
 			cc[i] = 1.0 + tau + aa[i] + bb[i];
 		}
 
-		// Расситываем значения правой части уравнения неявной схемы
+		// Вычисляем значения правой части уравнения неявной схемы
 
 		for (i=0; i<nc; i++) y1[i] = r(y0[i])*y0[i];
 

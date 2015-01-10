@@ -23,10 +23,7 @@ struct timezone
 
 int iabs(int a)
 {
-	if (a>=0)
-		return a;
-	else
-		return (-a);
+	return imax(-a,a);
 }
 
 int imax(int a, int b)
@@ -47,10 +44,7 @@ int imin(int a, int b)
 
 double dabs(double a)
 {
-	if (a>=0)
-		return a;
-	else
-		return (-a);
+	return dmax(-a,a);
 }
 
 double dmax(double a, double b)
