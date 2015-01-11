@@ -14,4 +14,9 @@
   <Module PersistentId="System, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, mvid=f35b1905-eb31-499a-b1ec-0e884d17becf" ModuleId="System_1" />
   <Module PersistentId="Microsoft.VisualStudio.QualityTools.UnitTestFramework, Version=10.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, mvid=f644d728-c1f1-48ef-b944-a5d0a59ded82" ModuleId="Microsoft.VisualStudio.QualityTools.UnitTestFramework" />
   <Module PersistentId="System.Core, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, mvid=86d72b42-fe14-44f7-9eeb-9412558864f3" ModuleId="System.Core_1" />
+  <Module PersistentId="System.Configuration, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, mvid=5305b49c-b9e3-4dfd-9bb8-a4b3c73fc998" ModuleId="System.Configuration_1" />
+  <Module PersistentId="System.Xml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, mvid=9e82231a-4aae-4180-b0ac-29f95ed8654f" ModuleId="System.Xml_1" />
+  <Module PersistentId="System.Data.SqlXml, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, mvid=ccca8fb2-897e-41f8-a772-8b087adf071f" ModuleId="System.Data.SqlXml_1" />
+  <Module PersistentId="System.Security, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, mvid=c254b27b-b22b-4eac-ba8a-9c43f9d04499" ModuleId="System.Security_1" />
+  <Module PersistentId="System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, mvid=1f78b6d9-62c1-46d3-8674-ee21e6e790df" ModuleId="System.Numerics_1" />
 </Modules>

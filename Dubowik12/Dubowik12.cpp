@@ -17,6 +17,8 @@
 #include "myio.h"
 #include "myprog.h"
 
+//static int debug=0x08+0x04+0x02+0x01;
+static int debug=0;
 static int np, mp, nl, ier, lp;
 static int mp_l, mp_r;
 static char pname[MPI_MAX_PROCESSOR_NAME];
@@ -61,6 +63,14 @@ double g2(double t) {
 	return u0;
 }
 
+size_t round8bytes(size_t size);
+size_t round8bytes(size_t size){
+	int r=size&0x7;
+	int q=size&~0x7;
+	if(r) return q+8;
+	return q;
+}
+
 // наибольший общий делитель
 int gcd(int n1, int n2);
 int gcd(int n1, int n2){
@@ -77,14 +87,16 @@ int gcd(int n1, int n2){
 int main(int argc, char *argv[])
 {
 	int i, j, ii, i1, i2, nc, ncm, ncp, ncx;
-	int ii1, ii2;
 	double hx, hx2, tau, gam, s0, s1, s2, s3;
 	double *xx, *aa, *bb, *cc, *ff, *y0, *y1, *y2, *y3, *y4, *al;
 	int id1, id2, it, gcdx;
-	double *ss_l, *rr_l, *ss_r, *rr_r;
-	double *yy0, *yy1; // предыдущее вычисления
+	double *bsl, *brl, *bsr, *brr;
+	double **yy1; // предыдущее вычисления
+	int ii1, ii2, nnc; // предыдущее вычисления
 
 	MyNetInit(&argc,&argv,&np,&mp,&nl,pname,&tick);
+	if (mp ==    0) mp_l = -1; else mp_l = mp - 1;
+	if (mp == np-1) mp_r = -1; else mp_r = mp + 1;
 
 	fprintf(stderr,"Netsize: %d, process: %d, system: %s, tick=%12le\n",np,mp,pname,tick);
 	//sleep(1);
@@ -143,7 +155,7 @@ int main(int argc, char *argv[])
 			buf.idata[101] = dnx; // прирост числа ячеек сетки
 			buf.idata[102] = n;
 			buf.idata[103] = ntp;
-			buf.idata[105] = ntm;
+			buf.idata[104] = ntm;
 			buf.idata[105] = lp;
 		}
 		MPI_Bcast(buf.ddata,200,MPI_DOUBLE,0,MPI_COMM_WORLD);
@@ -180,50 +192,61 @@ int main(int argc, char *argv[])
 
 	t1 = MPI_Wtime();
 
-	MyRange(np,mp,0,nx+n*dnx,&i1,&i2,&nc);
-	ncm = nc-1; ncp = 2*(np-1); ncx = imax(nc,ncp);
+	// Рассчёты для максимального массива
+	MyRange(np,mp,0,nx,&i1,&i2,&nc);
+	ncm = (nc-1)<<n; // Старший индекс в локальном массиве
+	i1<<=n; // Младший индекс в глобальном массиве
+	i2<<=n; // Старший индекс в глобальном массиве
+	nc = ncm+1; // Размер локального массива
+	ncp = 2*(np-1); ncx = imax(nc,ncp);
 
-	xx = (double*)(malloc(sizeof(double)*nc));
-	y0 = (double*)(malloc(sizeof(double)*nc));
-	y1 = (double*)(malloc(sizeof(double)*nc));
+	xx = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	y0 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	y1 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
 
-	yy0 = (double*)(malloc(sizeof(double)*nc)); // предыдущее вычисления
-	yy1 = (double*)(malloc(sizeof(double)*nc)); // предыдущее вычисления
+	yy1 = (double**)(malloc(round8bytes(sizeof(double*)*(n+1)))); // предыдущее вычисления
+	for(j=0;j<=n;j++) yy1[j] = (double*)(malloc(round8bytes(sizeof(double)*nc))); // предыдущее вычисления
 
-	aa = (double*)(malloc(sizeof(double)*nc));
-	bb = (double*)(malloc(sizeof(double)*nc));
-	cc = (double*)(malloc(sizeof(double)*nc));
-	ff = (double*)(malloc(sizeof(double)*nc));
-	al = (double*)(malloc(sizeof(double)*ncx));
+	aa = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	bb = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	cc = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	ff = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	al = (double*)(malloc(round8bytes(sizeof(double)*ncx)));
 
 	if (np>1) {
-		y2 = (double*)(malloc(sizeof(double)*nc));
-		y3 = (double*)(malloc(sizeof(double)*nc));
-		y4 = (double*)(malloc(sizeof(double)*9*ncp));
+		y2 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+		y3 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+		y4 = (double*)(malloc(round8bytes(sizeof(double)*9*ncp)));
 	}
 
 	// Буферы для обмена с соседями
-	rr_l = (double*)(malloc(sizeof(double)));
-	ss_l = (double*)(malloc(sizeof(double)));
-	rr_r = (double*)(malloc(sizeof(double)));
-	ss_r = (double*)(malloc(sizeof(double)));
+	brl = (double*)(malloc(round8bytes(sizeof(double))));
+	bsl = (double*)(malloc(round8bytes(sizeof(double))));
+	brr = (double*)(malloc(round8bytes(sizeof(double))));
+	bsr = (double*)(malloc(round8bytes(sizeof(double))));
 
+	// Цикл с разными шагами сетки
 	for(it=0;it<=n;it++) {
-		MyRange(np,mp,0,nx+n*dnx,&i1,&i2,&nc);
-		ncm = nc-1; ncp = 2*(np-1); ncx = imax(nc,ncp);
-
+		// k1 k3 q0 взяты из конспекта семинара. 
+		// здесь они используются для рассчёта сходимости
 		u10 = u1 - u0; /*omg0 = 1.0 / tau0; omg1 = 1.0 / tau1;*/
-		hx = (xb-xa)/(nx+it*dnx); hx2 = hx * hx;
-		tau = 0.5 * hx / sqrt(dmax(k1,k2));
-		tau = dmin(tau,tmax/ntm);
+		hx = (xb-xa)/(nx<<it); hx2 = hx * hx;
+		tau = tmax/ntm;
+		tau = dmin(tau,0.5 * hx2 / dmax(k1,k2));
+		tau = dmin(tau,0.5 * hx / sqrt(dmax(k1,k2)));
 		s0 = dmin(tmax/tau,1000000000.0); ntm = imin(ntm,(int)s0);
+
+		MyRange(np,mp,0,nx,&i1,&i2,&nc);
+		ncm = (nc-1)<<it; // Старший индекс в локальном массиве
+		i1<<=it; // Младший индекс в глобальном массиве
+		i2<<=it; // Старший индекс в глобальном массиве
+		nc = ncm+1; // Размер локального массива
+		ncp = 2*(np-1); 
+		ncx = imax(nc,ncp);
 
 		fprintf(Fo,"u10=%le omg0=%le omg1=%le\n",u10,omg0,omg1);
 		fprintf(Fo,"hx=%le tau=%le ntm=%d\n",hx,tau,ntm);
 		fprintf(Fo,"nx=%d hx=%le tau=%le ntm=%d\n",nx+it*dnx,hx,tau,ntm);
-
-		if (mp ==    0) mp_l = -1; else mp_l = mp - 1;
-		if (mp == np-1) mp_r = -1; else mp_r = mp + 1;
 
 		fprintf(Fo,"i1=%d i2=%d nc=%d\n",i1,i2,nc);
 
@@ -240,8 +263,10 @@ int main(int argc, char *argv[])
 		do {
 			ntv++; 
 			tv += tau;
+			if (debug&0x01) { fprintf(Fo,"tv=%le\n",tv);fflush(Fo); }
 
 			// НАЧАЛО АЛГОРИТМА ШАГА
+			if (debug&0x08) { fprintf(Fo,"Begin algo\n");fflush(Fo); }
 
 			// Задаём начальные условия и сохраняем значение искомой функции
 			for (i=0; i<nc; i++) {
@@ -252,24 +277,32 @@ int main(int argc, char *argv[])
 				else             y0[i] = y1[i];
 			}
 
-			ss_l[0] = y0[0];
-			ss_r[0] = y0[ncm];
-			rr_l[0] = y0[0];
-			rr_r[0] = y0[ncm];
+			// Модифицированная формула из семинара 9
+			// (1+tau/2)*y[j+1](i) 
+			//       - tau/hh*{k(y[j](i))k(y[j](i+1))/(k(y[j](i))+k(y[j](i+1)))*(y[j+1](i+1)-y[j+1](i))
+			//              -k(y[j](i))k(y[j](i-1))/(k(y[j](i))+k(y[j](i-1)))*(y[j+1](i)-y[j+1](i-1))} 
+			// = (1-tau/2)*y[j](i) 
+			//       + tau/hh*{k(y[j](i))k(y[j](i+1))/(k(y[j](i))+k(y[j](i+1)))*(y[j](i+1)-y[j](i))
+			//              -k(y[j](i))k(y[j](i-1))/(k(y[j](i))+k(y[j](i-1)))*(y[j](i)-y[j](i-1))} 
+			//       + tau*(d/dx)(r(u)u)
+
+			// Рассчитываем коэффициенты левой/правой части
+			// на основе текущих значений u
+			if (debug&0x04) { fprintf(Fo,"Begin calc aa bb cc\n");fflush(Fo); }
+
+			bsl[0] = y0[0];
+			bsr[0] = y0[ncm];
+			brl[0] = y0[0];
+			brr[0] = y0[ncm];
 
 			if(np>1){
-				BndAExch1D(mp_l,1,ss_l,rr_l,
-					mp_r,1,ss_r,rr_r);
+				// Обмениваемся копиями крайних ячеек фрагмента матрицы с соседями
+				if (debug&0x02) { fprintf(Fo,"Begin BndExch1D\n");fflush(Fo); }
+				BndExch1D(np, mp, 1, 1, 1, 1,
+					bsl, brl, bsr, brr);
+				if (debug&0x02) { fprintf(Fo,"\t\tEnd BndExch1D\n");fflush(Fo); }
 			}
 
-			// Модифицированная формула из семинара 9
-			// (1+tau)*y[j+1](i) 
-			//       - r/hh*{2*k(y[j](i))k(y[j](i+1))/(k(y[j](i))+k(y[j](i+1)))*(y[j+1](i+1)-y[j+1](i))
-			//              -2*k(y[j](i))k(y[j](i-1))/(k(y[j](i))+k(y[j](i-1)))*(y[j+1](i)-y[j+1](i-1))} 
-			//       = y[j](i) + tau*(d/dx)(r(u)u)
-
-			// Рассчитываем коэффициенты левой части
-			// на основе текущих значений u
 			for (i=0; i<nc; i++) {
 				ii = i1 + i;
 				id1 = i-1;
@@ -277,58 +310,90 @@ int main(int argc, char *argv[])
 				//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
 				//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
 				//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
-				s0 = y0[i]; s1 = (id1>=0)?k(y0[id1]):rr_l[0]; s2 = (id1<=ncm)?k(y0[id2]):rr_r[0];
+				s0 = y0[i]; 
+				s1 = (id1>=0)?y0[id1]:brl[0]; 
+				s2 = (id1<=ncm)?y0[id2]:brr[0];
 				s0 = k(s0);
 				s1 = k(s1);
 				s2 = k(s2);
-				aa[i] = gam * 2.0 * s0 * s1 / (s0 + s1);
-				bb[i] = gam * 2.0 * s0 * s2 / (s0 + s2);
-				cc[i] = 1.0 + tau + aa[i] + bb[i];
+				aa[i] = gam * s0 * s1 / (s0 + s1);
+				bb[i] = gam * s0 * s2 / (s0 + s2);
+				cc[i] = 1.0 + tau/2 + aa[i] + bb[i];
 			}
 
-			if(mp_l<0) { aa[0] = 0.0; bb[0] = 0.0; cc[0] = 1.0; }
-			if(mp_r<0) { aa[ncm] = 0.0; bb[ncm] = 0.0; cc[ncm] = 1.0; }
+			if (debug&0x04) { fprintf(Fo,"\t\tEnd calc aa bb cc\n");fflush(Fo); }
 
 			// Вычисляем значения правой части уравнения неявной схемы
+			if (debug&0x04) { fprintf(Fo,"Begin calc ff\n");fflush(Fo); }
 
-			for (i=0; i<nc; i++) y1[i] = r(y0[i])*y0[i];
-
-			ss_l[0] = y1[0];
-			ss_r[0] = y1[ncm];
-			rr_l[0] = y1[0];
-			rr_r[0] = y1[ncm];
-
-			if(np>1){
-				BndAExch1D(mp_l,1,ss_l,rr_l,
-					mp_r,1,ss_r,rr_r);
+			for (i=0; i<nc; i++) {
+				ii = i1 + i;
+				id1 = i-1;
+				id2 = i+1;
+				s0 = y0[i]; 
+				s1 = (id1>=0)?y0[id1]:brl[0]; 
+				s2 = (id2<nc)?y0[id2]:brr[0];
+				ff[i] = (1.0 - tau/2 - aa[i] - bb[i])*s0 - aa[i]*s1 - bb[i]*s2;
 			}
 
 			// Вычисляем tau*(d/dx)(r(u)u) и прибавляем к правой части уравнения неявной схемы
+			if (debug&0x04) { fprintf(Fo,"Begin add tau*(d/dx)(r(u)u)\n");fflush(Fo); }
+
+			for (i=0; i<nc; i++) y1[i]=r(y0[i])*y0[i];
+
+			bsl[0] = y1[0];
+			bsr[0] = y1[ncm];
+			brl[0] = y1[0];
+			brr[0] = y1[ncm];
+
+			if(np>1){
+				// Обмениваемся копиями крайних ячеек фрагмента матрицы с соседями
+				if (debug&0x02) { fprintf(Fo,"Begin BndExch1D\n");fflush(Fo); }
+				BndExch1D(np, mp, 1, 1, 1, 1,
+					bsl, brl, bsr, brr);
+				if (debug&0x02) { fprintf(Fo,"\t\tEnd BndExch1D\n");fflush(Fo); }
+			}
+
 			for (i=0; i<nc; i++) {
 				ii = i1 + i;
 				id1 = i-1;
 				id2 = i+1;
 				s0 = y1[i]; 
-				s1 = (id1>=0)?k(y1[id1]):rr_l[0]; 
-				s2 = (id2<nc)?k(y1[id2]):rr_r[0];
-				ff[i] = y0[i] + 1.0*(s2-s0)+0.0*(s1-s0);
+				s1 = (id1>=0)?y1[id1]:brl[0]; 
+				s2 = (id2<nc)?y1[id2]:brr[0];
+				ff[i] += tau*((s2-s0)-(s1-s0))/2/hx;
 			}
 
-			if(mp_l<0) ff[0] = g1(tv+tau);
-			if(mp_r<0) ff[ncm] = g2(tv+tau);
+			if (debug&0x04) { fprintf(Fo,"\t\tEnd add tau*(d/dx)(r(u)u)\n");fflush(Fo); }
+
+			// Задание ведущего элемента
+			// Поскольку задали два ведущих элемента, то система может быть несовместна
+			// но поскольку прогонка справа то всё нормально?
+			if (debug&0x04) { fprintf(Fo,"Begin let main\n");fflush(Fo); }
+
+			if(mp_l<0) { aa[0] = 0.0; bb[0] = 0.0; cc[0] = 1.0; ff[0] = g1(tv+tau); }
+			if(mp_r<0) { aa[ncm] = 0.0; bb[ncm] = 0.0; cc[ncm] = 1.0; ff[ncm] = g2(tv+tau); }
+
+			if (debug&0x04) { fprintf(Fo,"\t\tEnd let main\n");fflush(Fo); }
+			if (debug&0x04) { fprintf(Fo,"\t\tEnd calc ff\n");fflush(Fo); }
 
 			// Находим y[j+1] алгоритмом прогона
-			if (np<2) ier = prog_right(nc,aa,bb,cc,ff,al,y1);
-			else      ier = prog_rightpm(np,mp,nc,ntv,aa,bb,cc,ff,al,y1,y2,y3,y4);
+			if (debug&0x04) { fprintf(Fo,"Begin restore\n");fflush(Fo); }
 
+			if (np<2) ier = prog_right(nc,aa,bb,cc,ff,al,y1);
+			else      ier = prog_rightpm(np,mp,nc,0,aa,bb,cc,ff,al,y1,y2,y3,y4);
+			if (debug&0x01) { fprintf(Fo,"\tprog_rightpm returns %d\n",ier);fflush(Fo); }
+
+			if (debug&0x04) { fprintf(Fo,"\t\tEnd restore\n");fflush(Fo); }
+			if (debug&0x08) { fprintf(Fo,"\t\tEnd algo\n");fflush(Fo); }
 			// КОНЕЦ АЛГОРИТМА ШАГА
 
-			if (ier!=0) mpierr("Bad solution",1);
+			// if (ier!=0) mpierr("Bad solution",1);
 
 			if (ntv % ntp == 0) {
 				gt = 0.0;
 				for (i=0; i<nc; i++) {
-					s0 = y1[i]-y0[i] / tau; 
+					s0 = y1[i]-y0[i]; 
 					gt = dmax(gt,dabs(s0));
 				}
 				gt = gt / tau; 
@@ -348,6 +413,7 @@ int main(int argc, char *argv[])
 				fprintf(Fo,"ntv=%d tv=%le gt=%le\n",ntv,tv,gt);
 				for (i=0; i<nc; i++)
 					fprintf(Fo,"i=%8d x=%12le y1=%12le\n",(i1+i),xx[i],y1[i]);
+				fflush(Fo); 
 			}
 
 		} while ((ntv<ntm) && (gt>epst));
@@ -360,31 +426,24 @@ int main(int argc, char *argv[])
 		fprintf(Fo,"ntv=%d tv=%le gt=%le time=%le\n",ntv,tv,gt,t1);
 		if (mp == 0) fprintf(stderr,"ntv=%d tv=%le gt=%le tcpu=%le\n",ntv,tv,gt,t1);
 
-		if(it>0){
-			for(i=0;i<ncx;i++) yy1[i]=0.0;
-			gcdx = gcd(nx+it*dnx,nx+it*dnx-dnx);
-			id1 = (nx+it*dnx)/gcdx;
-			for(i=0;(i1%id1)+(id1*i)<i2;i++) 
-				yy1[i]+=y1[(i1%id1)+(id1*i)]; 
-
-			id2 = (nx+it*dnx-dnx)/gcdx;
-			for(i=0;(ii1%id2)+(id2*i)<ii2;i++) 
-				yy1[i]-=yy0[(ii1%id2)+(id2*i)];
-
+		for(j=1;j<=it;j++){
 			s0=0.0;
-			for(i=0;i<ncx;i++) s0=dmax(s0,dabs(yy1[i]));
+			for(i=0;i<=nc;i+=1<<j) 
+				s0=dmax(s0,dabs(y1[i]-yy1[it-j][i>>j]));
+
 			MPI_Allreduce(&s0,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 			if (mp == 0) {
-				fprintf(stderr,"np=%d nx=%d : nx=%d tv=%le s1=%le\n",
-					np,nx+it*dnx-dnx,nx+it*dnx,tv,s1);
+				fprintf(stderr,"Grid=%d nx=%d : nx=%d tv=%le s1=%le\n",
+					np,nx<<it,(nx<<it)>>j,tv,s1);
 				fflush(stderr);
 			}
 		}
-
 		// Сохраняем в предыдущее значение
-		for (i=0; i<ncx; i++) yy0[i] = y1[i];
+		for (i=0; i<nc; i++) yy1[it][i] = y1[i];
+
 		ii1=i1;
 		ii2=i2;
+		nnc=nc;
 	}
 	ier = fclose_m(&Fo);
 

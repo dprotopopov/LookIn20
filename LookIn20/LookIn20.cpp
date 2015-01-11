@@ -91,6 +91,14 @@ double g22(double t) {
 	return u0;
 }
 
+size_t round8bytes(size_t size);
+size_t round8bytes(size_t size){
+	int r=size&0x7;
+	int q=size&~0x7;
+	if(r) return q+8;
+	return q;
+}
+
 // наибольший общий делитель
 int gcd(int n1, int n2);
 int gcd(int n1, int n2){
@@ -114,9 +122,9 @@ int main(int argc, char *argv[])
 	double *xx1, *xx2, *aa1, *bb1, *aa2, *bb2, *yy0, *yy1, *yy2;
 	double *aa, *bb, *cc, *ff, *al, *y1, *y2, *y3, *y4;
 	double *ss_l, *rr_l, *ss_r, *rr_r, *ss_b, *rr_b, *ss_t, *rr_t;
-	int id1, id2, ncc1, ncc2, it, gcd1, gcd2;
+	int j, id1, id2, ncc1, ncc2, it, gcd1, gcd2;
 	int ii11, ii12, ii21, ii22, nnc1, nnc2; // предыдущее вычисления
-	double *yyy0, *yyy1; // предыдущее вычисления
+	double **yyy1; // предыдущее вычисления
 
 	int ranks[128];
 	MPI_Group gr0, gr1, gr2;
@@ -256,56 +264,7 @@ int main(int argc, char *argv[])
 
 	t1 = MPI_Wtime(); // Замер времени начала работы программы
 
-	My2DGrid(np,mp,n1+n*dn1,n2+n*dn2,&np1,&np2,&mp1,&mp2); // Распределение максимальной сетки между процессами
-
-	// Вычисляем максимальные размеры массивов и аллокируем их
-	MyRange(np1,mp1,0,n1+n*dn1,&i11,&i12,&nc1); nc1m = nc1-1; 
-	MyRange(np2,mp2,0,n2+n*dn2,&i21,&i22,&nc2); nc2m = nc2-1; 
-	nc12 = nc1 * nc2;
-	ncp1 = 2*(np1-1); ncx1 = imax(nc1,ncp1);
-	ncp2 = 2*(np2-1); ncx2 = imax(nc2,ncp2);
-	ncp = imax(ncp1,ncp2); ncx = imax(ncx1,ncx2);
-	ncpx = imax(ncp,ncx);
-
-	xx1 = (double*)(malloc(sizeof(double)*nc1));
-	xx2 = (double*)(malloc(sizeof(double)*nc2));
-
-	yy0 = (double*)(malloc(sizeof(double)*nc12));
-	yy1 = (double*)(malloc(sizeof(double)*nc12));
-	yy2 = (double*)(malloc(sizeof(double)*nc12)); // промежуточные вычисления
-
-	yyy0 = (double*)(malloc(sizeof(double)*nc12)); // предыдущее вычисления
-	yyy1 = (double*)(malloc(sizeof(double)*nc12)); // предыдущее вычисления
-
-	aa1 = (double*)(malloc(sizeof(double)*nc12));
-	bb1 = (double*)(malloc(sizeof(double)*nc12));
-
-	aa2 = (double*)(malloc(sizeof(double)*nc12));
-	bb2 = (double*)(malloc(sizeof(double)*nc12));
-
-	aa = (double*)(malloc(sizeof(double)*ncx));
-	bb = (double*)(malloc(sizeof(double)*ncx));
-	cc = (double*)(malloc(sizeof(double)*ncx));
-	ff = (double*)(malloc(sizeof(double)*ncx));
-	al = (double*)(malloc(sizeof(double)*ncpx));
-	y1 = (double*)(malloc(sizeof(double)*ncx));
-
-	if (np>1) {
-		y2 = (double*)(malloc(sizeof(double)*ncx));
-		y3 = (double*)(malloc(sizeof(double)*ncx));
-		y4 = (double*)(malloc(sizeof(double)*9*ncp));
-	}
-
-	// Буфферы для обмена с соседями
-	rr_l = (double*)(malloc(sizeof(double)*nc2));
-	ss_l = (double*)(malloc(sizeof(double)*nc2));
-	rr_r = (double*)(malloc(sizeof(double)*nc2));
-	ss_r = (double*)(malloc(sizeof(double)*nc2));
-	rr_b = (double*)(malloc(sizeof(double)*nc1));
-	ss_b = (double*)(malloc(sizeof(double)*nc1));
-	rr_t = (double*)(malloc(sizeof(double)*nc1));
-	ss_t = (double*)(malloc(sizeof(double)*nc1));
-
+	My2DGrid(np,mp,n1,n2,&np1,&np2,&mp1,&mp2); // Распределение сетки между процессами
 	//
 	// mp = np1 * mp2 + mp1
 	//
@@ -333,19 +292,92 @@ int main(int argc, char *argv[])
 	MPI_Group_incl(gr0,np2,ranks,&gr2);
 	MPI_Comm_create(MPI_COMM_WORLD,gr2,&cm2); 
 
+
+	// Рассчёты для максимального массива
+	// Вычисляем максимальные размеры массивов и аллокируем их
+	MyRange(np1,mp1,0,n1,&i11,&i12,&nc1); 
+	MyRange(np2,mp2,0,n2,&i21,&i22,&nc2); 
+	nc1m = (nc1-1)<<n; // Старший индекс в локальном массиве
+	nc2m = (nc2-1)<<n; // Старший индекс в локальном массиве
+	i11<<=n; // Младший индекс в глобальном массиве
+	i12<<=n; // Старший индекс в глобальном массиве
+	i21<<=n; // Младший индекс в глобальном массиве
+	i22<<=n; // Старший индекс в глобальном массиве
+	nc1=nc1m+1; // Размер локального массива
+	nc2=nc2m+1; // Размер локального массива
+	nc12 = nc1 * nc2; // Размер локального массива
+
+	nc12 = nc1 * nc2;
+	ncp1 = 2*(np1-1); ncx1 = imax(nc1,ncp1);
+	ncp2 = 2*(np2-1); ncx2 = imax(nc2,ncp2);
+	ncp = imax(ncp1,ncp2); ncx = imax(ncx1,ncx2);
+	ncpx = imax(ncp,ncx);
+
+	xx1 = (double*)(malloc(round8bytes(sizeof(double)*nc1)));
+	xx2 = (double*)(malloc(round8bytes(sizeof(double)*nc2)));
+
+	yy0 = (double*)(malloc(round8bytes(sizeof(double)*nc12)));
+	yy1 = (double*)(malloc(round8bytes(sizeof(double)*nc12)));
+	yy2 = (double*)(malloc(round8bytes(sizeof(double)*nc12))); // промежуточные вычисления
+
+	yyy1 = (double**)(malloc(round8bytes(sizeof(double*)*(n+1)))); // предыдущее вычисления
+	for(j=0;j<=n;j++) yyy1[j] = (double*)(malloc(round8bytes(sizeof(double)*nc12))); // предыдущее вычисления
+
+	aa1 = (double*)(malloc(round8bytes(sizeof(double)*nc12)));
+	bb1 = (double*)(malloc(round8bytes(sizeof(double)*nc12)));
+
+	aa2 = (double*)(malloc(round8bytes(sizeof(double)*nc12)));
+	bb2 = (double*)(malloc(round8bytes(sizeof(double)*nc12)));
+
+	aa = (double*)(malloc(round8bytes(sizeof(double)*ncx)));
+	bb = (double*)(malloc(round8bytes(sizeof(double)*ncx)));
+	cc = (double*)(malloc(round8bytes(sizeof(double)*ncx)));
+	ff = (double*)(malloc(round8bytes(sizeof(double)*ncx)));
+	al = (double*)(malloc(round8bytes(sizeof(double)*ncpx)));
+	y1 = (double*)(malloc(round8bytes(sizeof(double)*ncx)));
+
+	if (np>1) {
+		y2 = (double*)(malloc(round8bytes(sizeof(double)*ncx)));
+		y3 = (double*)(malloc(round8bytes(sizeof(double)*ncx)));
+		y4 = (double*)(malloc(round8bytes(sizeof(double)*9*ncp)));
+	}
+
+	// Буфферы для обмена с соседями
+	rr_l = (double*)(malloc(round8bytes(sizeof(double)*nc2)));
+	ss_l = (double*)(malloc(round8bytes(sizeof(double)*nc2)));
+	rr_r = (double*)(malloc(round8bytes(sizeof(double)*nc2)));
+	ss_r = (double*)(malloc(round8bytes(sizeof(double)*nc2)));
+	rr_b = (double*)(malloc(round8bytes(sizeof(double)*nc1)));
+	ss_b = (double*)(malloc(round8bytes(sizeof(double)*nc1)));
+	rr_t = (double*)(malloc(round8bytes(sizeof(double)*nc1)));
+	ss_t = (double*)(malloc(round8bytes(sizeof(double)*nc1)));
+
+	// Цикл с разными шагами сетки
 	for(it=0;it<=n;it++) {
+		// k1 k3 q0 взяты из конспекта семинара. 
+		// здесь они используются для рассчёта сходимости
 		u10 = u1 - u0; /*omg0 = 1.0 / tau0; omg1 = 1.0 / tau1;*/
-		h1 = (b1-a1)/(n1+it*dn1); h12 = h1 * h1;
-		h2 = (b2-a2)/(n2+it*dn2); h22 = h2 * h2;
-		tau = 0.5 * dmin(h1,h2) / dmax(k1,k2); tau = dmin(tau,tmax/ntm);
+		h1 = (b1-a1)/(n1<<it); h12 = h1 * h1;
+		h2 = (b2-a2)/(n2<<it); h22 = h2 * h2;
+		tau = tmax/ntm;
+		tau = dmin(tau,0.25 * dmin(h12,h22) / dmax(k1,k2)); 
 		s0 = dmin(tmax/tau,1000000000.0); ntm = imin(ntm,(int)s0);
 
 		fprintf(Fo,"u10=%le omg0=%le omg1=%le\n",u10,omg0,omg1);
 		fprintf(Fo,"h1=%le h2=%le tau=%le ntm=%d\n",h1,h2,tau,ntm);
 
-		MyRange(np1,mp1,0,n1+it*dn1,&i11,&i12,&nc1); nc1m = nc1-1; 
-		MyRange(np2,mp2,0,n2+it*dn2,&i21,&i22,&nc2); nc2m = nc2-1; 
-		nc12 = nc1 * nc2;
+		MyRange(np1,mp1,0,n1,&i11,&i12,&nc1);
+		MyRange(np2,mp2,0,n2,&i21,&i22,&nc2);
+
+		nc1m = (nc1-1)<<it; // Старший индекс в локальном массиве
+		nc2m = (nc2-1)<<it; // Старший индекс в локальном массиве
+		i11<<=it; // Младший индекс в глобальном массиве
+		i12<<=it; // Старший индекс в глобальном массиве
+		i21<<=it; // Младший индекс в глобальном массиве
+		i22<<=it; // Старший индекс в глобальном массиве
+		nc1=nc1m+1; // Размер локального массива
+		nc2=nc2m+1; // Размер локального массива
+		nc12 = nc1 * nc2; // Размер локального массива
 
 		ncp1 = 2*(np1-1); ncx1 = imax(nc1,ncp1);
 		ncp2 = 2*(np2-1); ncx2 = imax(nc2,ncp2);
@@ -359,7 +391,7 @@ int main(int argc, char *argv[])
 		fprintf(Fo,"ncx1=%d ncx2=%d ncx=%d\n",ncx1,ncx2,ncx);fflush(Fo);
 
 		fprintf(Fo,"n1=%d n2=%d h1=%le h2=%le tau=%le ntm=%d\n",
-			n1+it*dn1,n2+it*dn2,h1,h2,tau,ntm);fflush(Fo);
+			n1<<it,n2+it*dn2,h1,h2,tau,ntm);fflush(Fo);
 		fprintf(Fo,"Grid=%dx%d\n",np1,np2);fflush(Fo);
 
 		for (i1=0; i1<nc1; i1++) xx1[i1] = a1 + h1 * (i11 + i1); // grid for x1
@@ -383,7 +415,7 @@ int main(int argc, char *argv[])
 				j1 = i11 + i1;
 				m = nc1 * i2 + i1;
 
-				if ((j1==0) || (j1==(n1+it*dn1))) {
+				if ((j1==0) || (j1==(n1<<it))) {
 					aa1[m] = 0.0; bb1[m] = 0.0;
 				}
 				else {
@@ -488,6 +520,11 @@ int main(int argc, char *argv[])
 					aa[i2] = 0.0; bb[i2] = 1.0; cc[i2] = 1.0; ff[i2] = -yy2[m];
 				}
 
+				// Задание ведущего элемента
+				if (debug&0x04) { fprintf(Fo,"Begin let main\n");fflush(Fo); }
+				if(mp_b<0) { aa[0] = 0.0; bb[0] = 0.0; cc[0] = 1.0; ff[0] = yy1[0];}
+				if (debug&0x04) { fprintf(Fo,"\t\tEnd let main\n");fflush(Fo); }
+
 				if (debug&0x02) { fprintf(Fo,"Begin prog_rightpn\n");fflush(Fo); }
 				ier = prog_rightpn(np2,mp2,cm2,nc2,0,aa,bb,cc,ff,al,y1,y2,y3,y4);
 				if (debug&0x01) { fprintf(Fo,"\tprog_rightpn returns %d\n",ier);fflush(Fo); }
@@ -562,6 +599,11 @@ int main(int argc, char *argv[])
 					//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
 					aa[i2] = 1.0; bb[i2] = 0.0; cc[i2] = 1.0; ff[i2] = -yy2[m];
 				}
+
+				// Задание ведущего элемента
+				if (debug&0x04) { fprintf(Fo,"Begin let main\n");fflush(Fo); }
+				if(mp_t<0) { aa[nc2m] = 0.0; bb[nc2m] = 0.0; cc[nc2m] = 1.0; ff[nc2m] = yy1[0];}
+				if (debug&0x04) { fprintf(Fo,"\t\tEnd let main\n");fflush(Fo); }
 
 				if (debug&0x02) { fprintf(Fo,"Begin prog_rightpn\n");fflush(Fo); }
 				ier = prog_rightpn(np2,mp2,cm2,nc2,0,aa,bb,cc,ff,al,y1,y2,y3,y4);
@@ -745,7 +787,8 @@ int main(int argc, char *argv[])
 				gt = gt / tau; 
 
 				if (np>1) {
-					s0 = gt; MPI_Allreduce(&s0,&gt,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+					s0 = gt; 
+					MPI_Allreduce(&s0,&gt,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 				}
 
 				if (mp == 0) {
@@ -778,36 +821,25 @@ int main(int argc, char *argv[])
 
 		if (mp == 0) {
 			fprintf(stderr,"Grid=%dx%d n1=%d n2=%d ntv=%d tv=%le gt=%le tcpu=%le\n",
-				np1,np2,n1+it*dn1,n2+it*dn2,ntv,tv,gt,t1);fflush(stderr);
+				np1,np2,n1<<it,n2+it*dn2,ntv,tv,gt,t1);fflush(stderr);
 		}
 
-		//if(it>0){
-		//	for(m=0;n<nc12;m++) yyy1[m]=0;
-		//	gcd1 = gcd(n1+it*dn1,n1+it*dn1-dn1);
-		//	gcd2 = gcd(n2+it*dn2,n2+it*dn2-dn2);
-		//	id1 = (n1+it*dn1)/gcd1; 
-		//	id2 = (n2+it*dn2)/gcd2; 
-		//	for(i1=0;(i11%id1)+(id1*i1)<=i12;i1++) 
-		//		for(i2=0;(i21%id2)+(id2*i2)<=i22;i2++) 
-		//			yyy1[nc1*i2+i1]+=yy0[nc1*((i21%id2)+(id2*i2))+((i11%id1)+(id1*i1))];
+		for(j=1;j<=it;j++){
+			s0=0.0;
+			for(i1=0;i1<=nc1;i1+=1<<j) 
+				for(i2=0;i2<=nc2;i2+=1<<j) 
+					s0=dmax(s0,dabs(yy1[nc1*i2+i1]-yyy1[it-j][(nnc1*i2+i1)>>j]));
 
-		//	id1 = (n1+it*dn1-dn1)/gcd1; 
-		//	id2 = (n2+it*dn2-dn2)/gcd2; 
-		//	for(i1=0;(ii11%id1)+(id1*i1)<=ii12;i1++) 
-		//		for(i2=0;(ii21%id2)+(id2*i2)<=ii22;i2++) 
-		//			yyy1[nc1*i2+i1]-=yyy0[nnc1*((ii21%id2)+(id2*i2))+((ii11%id1)+(id1*i1))];
-
-		//	s0=0.0;
-		//	for(m=0;m<nc12;m++) s0=dmax(s0,dabs(yyy1[m]));
-		//	MPI_Allreduce(&s0,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
-		//	if (mp == 0) {
-		//		fprintf(stderr,"Grid=%dx%d n1=%d n2=%d : n1=%d n2=%d tv=%le s1=%le\n",
-		//			np1,np2,n1+it*dn1-dn1,n2+it*dn2-dn2,n1+it*dn1,n2+it*dn2,tv,s1);
-		//		fflush(stderr);
-		//	}
-		//}
+			MPI_Allreduce(&s0,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+			if (mp == 0) {
+				fprintf(stderr,"Grid=%dx%d n1=%d n2=%d : n1=%d n2=%d tv=%le s1=%le\n",
+					np1,np2,n1<<it,n2<<it,(n1<<it)>>j,(n2<<it)>>j,tv,s1);
+				fflush(stderr);
+			}
+		}
 		// Сохраняем в предыдущее значение
-		for (m=0; m<nc12; m++) yyy0[m] = yy1[m];
+		for (m=0; m<nc12; m++) yyy1[it][m] = yy1[m];
+
 		ii11=i11;
 		ii12=i12;
 		ii21=i21; 
