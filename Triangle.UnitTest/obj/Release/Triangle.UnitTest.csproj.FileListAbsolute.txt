@@ -1,0 +1,4 @@
+D:\Projects\LookIn20\Triangle.UnitTest\bin\Release\Triangle.UnitTest.dll
+D:\Projects\LookIn20\Triangle.UnitTest\bin\Release\Triangle.UnitTest.pdb
+D:\Projects\LookIn20\Triangle.UnitTest\obj\Release\Triangle.UnitTest.dll
+D:\Projects\LookIn20\Triangle.UnitTest\obj\Release\Triangle.UnitTest.pdb
