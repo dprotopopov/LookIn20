@@ -90,7 +90,7 @@ int main(int argc, char *argv[])
 	double hx, hx2, tau, gam, s0, s1, s2, s3;
 	double *xx, *aa, *bb, *cc, *ff, *y0, *y1, *y2, *y3, *y4, *al;
 	int id1, id2, it, gcdx;
-	double *bsl, *brl, *bsr, *brr;
+	double *bsl, *brl, *bsr, *brr; // Буферы для обмена с соседями
 	double **yy1; // предыдущее вычисления
 	int ii1, ii2, nnc; // предыдущее вычисления
 

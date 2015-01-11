@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 	double h1, h12, h2, h22, tau, gam1, gam2, s0, s1, s2, s3, s4, s5;
 	double *xx1, *xx2, *aa1, *bb1, *aa2, *bb2, *yy0, *yy1, *yy2;
 	double *aa, *bb, *cc, *ff, *al, *y1, *y2, *y3, *y4;
-	double *ss_l, *rr_l, *ss_r, *rr_r, *ss_b, *rr_b, *ss_t, *rr_t;
+	double *ss_l, *rr_l, *ss_r, *rr_r, *ss_b, *rr_b, *ss_t, *rr_t; // Буферы для обмена с соседями
 	int j, id1, id2, ncc1, ncc2, it, gcd1, gcd2;
 	int ii11, ii12, ii21, ii22, nnc1, nnc2; // предыдущее вычисления
 	double **yyy1; // предыдущее вычисления
@@ -360,7 +360,7 @@ int main(int argc, char *argv[])
 		h1 = (b1-a1)/(n1<<it); h12 = h1 * h1;
 		h2 = (b2-a2)/(n2<<it); h22 = h2 * h2;
 		tau = tmax/ntm;
-		tau = dmin(tau,0.25 * dmin(h12,h22) / dmax(k1,k2)); 
+		tau = dmin(tau,0.5 * dmin(h1,h2) / dmax(k1,k2)); 
 		s0 = dmin(tmax/tau,1000000000.0); ntm = imax(ntm,(int)s0);
 
 		fprintf(Fo,"u10=%le omg0=%le omg1=%le\n",u10,omg0,omg1);
@@ -391,7 +391,7 @@ int main(int argc, char *argv[])
 		fprintf(Fo,"ncx1=%d ncx2=%d ncx=%d\n",ncx1,ncx2,ncx);fflush(Fo);
 
 		fprintf(Fo,"n1=%d n2=%d h1=%le h2=%le tau=%le ntm=%d\n",
-			n1<<it,n2+it*dn2,h1,h2,tau,ntm);fflush(Fo);
+			n1<<it,n2<<it,h1,h2,tau,ntm);fflush(Fo);
 		fprintf(Fo,"Grid=%dx%d\n",np1,np2);fflush(Fo);
 
 		for (i1=0; i1<nc1; i1++) xx1[i1] = a1 + h1 * (i11 + i1); // grid for x1
@@ -426,7 +426,7 @@ int main(int argc, char *argv[])
 					bb1[m] = gam1 * 2.0 * s0 * s2 / (s0 + s2);
 				}
 
-				if ((j2==0) || (j2==(n2+it*dn2))) {
+				if ((j2==0) || (j2==(n2<<it))) {
 					aa2[m] = 0.0; bb2[m] = 0.0;
 				}
 				else {
@@ -569,7 +569,7 @@ int main(int argc, char *argv[])
 				s0=yy1[m];
 				s1=(i2==0)?rr_b[i1]:yy1[id1];
 				s2=(i2==nc2m)?rr_t[i1]:yy1[id2];
-				yy2[m]=0.0*(s2-s0)+0.1*(s1-s0);
+				yy2[m]=0.0*(s2-s0)+1.0*(s1-s0);
 			}
 
 			if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2\n");fflush(Fo); }
@@ -602,7 +602,7 @@ int main(int argc, char *argv[])
 
 				// Задание ведущего элемента
 				if (debug&0x04) { fprintf(Fo,"Begin let main\n");fflush(Fo); }
-				if(mp_t<0) { aa[nc2m] = 0.0; bb[nc2m] = 0.0; cc[nc2m] = 1.0; ff[nc2m] = yy1[0];}
+				if(mp_t<0) { aa[nc2m] = 0.0; bb[nc2m] = 0.0; cc[nc2m] = 1.0; ff[nc2m] = yy1[nc2m];}
 				if (debug&0x04) { fprintf(Fo,"\t\tEnd let main\n");fflush(Fo); }
 
 				if (debug&0x02) { fprintf(Fo,"Begin prog_rightpn\n");fflush(Fo); }
