@@ -423,6 +423,16 @@ int main(int argc, char *argv[])
 			// чтобы добавить крайние условия для производной по x2
 			if (debug&0x04) { fprintf(Fo,"Begin diff by x2\n");fflush(Fo); }
 
+			// Вычисляем дифференциал по оси x2 следующее минус текущее
+			// Задаём граничные условия для производной по x2
+			// то есть присваиваем ноль дифференциалу по верхней границе
+			// Интегрируем обратно по оси i2 прогонкой по оси x2
+			// Это равносильно присвоению элементу верхней грацицы значения
+			// предыдущего элемента
+
+			// Вычисляем дифференциал по оси x2
+			// Следующее минус текущее
+
 			for (i1=0; i1<nc1; i1++) { m = nc1 * 0 + i1; ss_b[i1] = yy1[m]; }
 			for (i1=0; i1<nc1; i1++) { m = nc1 * 0 + i1; rr_b[i1] = yy1[m]; }
 			for (i1=0; i1<nc1; i1++) { m = nc1 * nc2m + i1; ss_t[i1] = yy1[m]; }
@@ -436,8 +446,6 @@ int main(int argc, char *argv[])
 					mp_t,nc1,ss_t,rr_t);
 				if (debug&0x02) { fprintf(Fo,"\t\tEnd BndAExch1D\n");fflush(Fo); }
 			}
-
-			// Вычисляем дифференциал по оси x2
 
 			for (m=0; m<nc12; m++) {
 				i1=m%nc1;
@@ -458,9 +466,6 @@ int main(int argc, char *argv[])
 			// то есть присваиваем ноль дифференциалу
 			if (debug&0x04) { fprintf(Fo,"Begin diff by x2 let zero\n");fflush(Fo); }
 
-			if (mp_b<0) { // Если нет строк ниже
-				for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + 0; yy2[m]=g21(tv)*h2; }
-			}
 			if (mp_t<0) { // Если нет строк выше
 				for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + nc2m; yy2[m]=g22(tv)*h2; }
 			}
@@ -491,8 +496,82 @@ int main(int argc, char *argv[])
 				for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + i1; yy1[m] = y1[i2]; }
 			}
 
-			if (debug&0x04) { fprintf(Fo,"\t\tEnd restore diff by x2\n");fflush(Fo); }
 
+			// Вычисляем минус дифференциал по оси x2 предыдущее минус текущее
+			// Задаём граничные условия для производной по x2
+			// то есть присваиваем минус ноль дифференциалу по верхней границе
+			// Интегрируем обратно по оси i2 прогонкой по оси x2
+			// Это равносильно присвоению элементу нижней грацицы значения
+			// следующего элемента
+
+			// Вычисляем минус дифференциал по оси x2
+			// Предыдущее минус текущее
+			if (debug&0x04) { fprintf(Fo,"Begin diff by x2\n");fflush(Fo); }
+
+			for (i1=0; i1<nc1; i1++) { m = nc1 * 0 + i1; ss_b[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = nc1 * 0 + i1; rr_b[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = nc1 * nc2m + i1; ss_t[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = nc1 * nc2m + i1; rr_t[i1] = yy1[m]; }
+
+			if(np2>1){
+				// Обмениваемся копиями крайних строк фрагмента матрицы с соседями
+
+				if (debug&0x02) { fprintf(Fo,"Begin BndAExch1D\n");fflush(Fo); }
+				BndAExch1D(mp_b,nc1,ss_b,rr_b,
+					mp_t,nc1,ss_t,rr_t);
+				if (debug&0x02) { fprintf(Fo,"\t\tEnd BndAExch1D\n");fflush(Fo); }
+			}
+
+			for (m=0; m<nc12; m++) {
+				i1=m%nc1;
+				i2=m/nc1;
+				j1 = i11 + i1;
+				j2 = i21 + i2;
+				id1 = nc1 * i2 + i1 - nc1; // Предыдущий элемент по столбцу
+				id2 = nc1 * i2 + i1 + nc1; // Следующий элемент по столбцу
+				s0=yy1[m];
+				s1=(i2==0)?rr_b[i1]:yy1[id1];
+				s2=(i2==nc2m)?rr_t[i1]:yy1[id2];
+				yy2[m]=0.0*(s2-s0)+0.1*(s1-s0);
+			}
+
+			if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2\n");fflush(Fo); }
+
+			// Задаём граничные условия для производной по x2
+			// то есть присваиваем ноль дифференциалу
+			if (debug&0x04) { fprintf(Fo,"Begin diff by x2 let zero\n");fflush(Fo); }
+
+			if (mp_b<0) { // Если нет строк ниже
+				for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + 0; yy2[m]=-g21(tv)*h2; }
+			}
+
+			if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2 let zero\n");fflush(Fo); }
+
+			// Интегрируем обратно по оси i2 прогонкой по оси x2
+			// чтобы восстановить исходную функцию с которой сейчас работаем
+			if (debug&0x04) { fprintf(Fo,"Begin restore diff by x2\n");fflush(Fo); }
+
+			for (i1=0; i1<nc1; i1++) {
+				j1 = i11 + i1;
+
+				for (i2=0; i2<nc2; i2++) {
+					j2 = i21 + i2;
+					m = nc1 * i2 + i1;
+					//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
+					//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
+					//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
+					aa[i2] = 1.0; bb[i2] = 0.0; cc[i2] = 1.0; ff[i2] = -yy2[m];
+				}
+
+				if (debug&0x02) { fprintf(Fo,"Begin prog_rightpn\n");fflush(Fo); }
+				ier = prog_rightpn(np2,mp2,cm2,nc2,0,aa,bb,cc,ff,al,y1,y2,y3,y4);
+				if (debug&0x01) { fprintf(Fo,"\tprog_rightpn returns %d\n",ier);fflush(Fo); }
+				if (debug&0x02) { fprintf(Fo,"\t\tEnd prog_rightpn\n");fflush(Fo); }
+
+				for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + i1; yy1[m] = y1[i2]; }
+			}
+
+			if (debug&0x04) { fprintf(Fo,"\t\tEnd restore diff by x2\n");fflush(Fo); }
 
 			// Задаём граничные условия по x1
 			if (debug&0x04) { fprintf(Fo,"Begin let by x1\n");fflush(Fo); }
@@ -702,31 +781,31 @@ int main(int argc, char *argv[])
 				np1,np2,n1+it*dn1,n2+it*dn2,ntv,tv,gt,t1);fflush(stderr);
 		}
 
-		if(it>0){
-			for(m=0;n<nc12;m++) yyy1[m]=0;
-			gcd1 = gcd(n1+it*dn1,n1+it*dn1-dn1);
-			gcd2 = gcd(n2+it*dn2,n2+it*dn2-dn2);
-			id1 = (n1+it*dn1)/gcd1; 
-			id2 = (n2+it*dn2)/gcd2; 
-			for(i1=0;(i11%id1)+(id1*i1)<=i12;i1++) 
-				for(i2=0;(i21%id2)+(id2*i2)<=i22;i2++) 
-					yyy1[nc1*i2+i1]+=yy0[nc1*((i21%id2)+(id2*i2))+((i11%id1)+(id1*i1))];
+		//if(it>0){
+		//	for(m=0;n<nc12;m++) yyy1[m]=0;
+		//	gcd1 = gcd(n1+it*dn1,n1+it*dn1-dn1);
+		//	gcd2 = gcd(n2+it*dn2,n2+it*dn2-dn2);
+		//	id1 = (n1+it*dn1)/gcd1; 
+		//	id2 = (n2+it*dn2)/gcd2; 
+		//	for(i1=0;(i11%id1)+(id1*i1)<=i12;i1++) 
+		//		for(i2=0;(i21%id2)+(id2*i2)<=i22;i2++) 
+		//			yyy1[nc1*i2+i1]+=yy0[nc1*((i21%id2)+(id2*i2))+((i11%id1)+(id1*i1))];
 
-			id1 = (n1+it*dn1-dn1)/gcd1; 
-			id2 = (n2+it*dn2-dn2)/gcd2; 
-			for(i1=0;(ii11%id1)+(id1*i1)<=ii12;i1++) 
-				for(i2=0;(ii21%id2)+(id2*i2)<=ii22;i2++) 
-					yyy1[nc1*i2+i1]-=yyy0[nnc1*((ii21%id2)+(id2*i2))+((ii11%id1)+(id1*i1))];
+		//	id1 = (n1+it*dn1-dn1)/gcd1; 
+		//	id2 = (n2+it*dn2-dn2)/gcd2; 
+		//	for(i1=0;(ii11%id1)+(id1*i1)<=ii12;i1++) 
+		//		for(i2=0;(ii21%id2)+(id2*i2)<=ii22;i2++) 
+		//			yyy1[nc1*i2+i1]-=yyy0[nnc1*((ii21%id2)+(id2*i2))+((ii11%id1)+(id1*i1))];
 
-			s0=0.0;
-			for(m=0;m<nc12;m++) s0=dmax(s0,dabs(yyy1[m]));
-			MPI_Allreduce(&s0,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
-			if (mp == 0) {
-				fprintf(stderr,"Grid=%dx%d n1=%d n2=%d : n1=%d n2=%d tv=%le s1=%le\n",
-					np1,np2,n1+it*dn1-dn1,n2+it*dn2-dn2,n1+it*dn1,n2+it*dn2,tv,s1);
-				fflush(stderr);
-			}
-		}
+		//	s0=0.0;
+		//	for(m=0;m<nc12;m++) s0=dmax(s0,dabs(yyy1[m]));
+		//	MPI_Allreduce(&s0,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+		//	if (mp == 0) {
+		//		fprintf(stderr,"Grid=%dx%d n1=%d n2=%d : n1=%d n2=%d tv=%le s1=%le\n",
+		//			np1,np2,n1+it*dn1-dn1,n2+it*dn2-dn2,n1+it*dn1,n2+it*dn2,tv,s1);
+		//		fflush(stderr);
+		//	}
+		//}
 		// Сохраняем в предыдущее значение
 		for (m=0; m<nc12; m++) yyy0[m] = yy1[m];
 		ii11=i11;

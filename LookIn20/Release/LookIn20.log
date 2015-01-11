@@ -1,67 +1,11 @@
-﻿Построение начато 09.01.2015 1:12:43.
+﻿Построение начато 11.01.2015 5:17:58.
      1>Проект "D:\Projects\LookIn20\LookIn20\LookIn20.vcxproj" в узле 2 (целевые объекты Rebuild).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc110.pdb" /Gd /TP /analyze- /errorReport:prompt LookIn20.cpp
          LookIn20.cpp
-     1>LookIn20.cpp(97): warning C4101: s3: неиспользованная локальная переменная
-     1>LookIn20.cpp(97): warning C4101: s5: неиспользованная локальная переменная
-     1>LookIn20.cpp(97): warning C4101: s4: неиспользованная локальная переменная
-         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /Zi /nologo /W3 /WX- /O2 /Oi /Oy- /GL /D WIN32 /D NDEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm- /EHsc /MD /GS /Gy /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Release\\" /Fd"Release\vc110.pdb" /Gd /TC /analyze- /errorReport:prompt mycom.c myio.c mynet.c myprog.c myrand.c
-         mycom.c
-     1>mycom.c(102): warning C4013: gettimeofday: нет определения; предполагается "extern" с возвратом типа "int"
-     1>mycom.c(147): warning C4996: 'fopen': This function or variable may be unsafe. Consider using fopen_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-                 C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\include\stdio.h(218): см. объявление "fopen"
-         myio.c
-         mynet.c
-         myprog.c
-     1>myprog.c(200): warning C4101: j: неиспользованная локальная переменная
-     1>myprog.c(306): warning C4101: j: неиспользованная локальная переменная
-         myrand.c
-       Link:
-         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Projects\LookIn20\Release\LookIn20.exe" /INCREMENTAL:NO /NOLOGO /LIBPATH:"C:\Program Files\MPICH2\lib" mpi.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"D:\Projects\LookIn20\Release\LookIn20.pdb" /SUBSYSTEM:CONSOLE /OPT:REF /OPT:ICF /LTCG /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Projects\LookIn20\Release\LookIn20.lib" /MACHINE:X86 /SAFESEH Release\LookIn20.obj
-         Release\mycom.obj
-         Release\myio.obj
-         Release\mynet.obj
-         Release\myprog.obj
-         Release\myrand.obj
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""int __cdecl MyNetInit(int *,char * * *,int *,int *,int *,char *,double *)" (?MyNetInit@@YAHPAHPAPAPAD000PADPAN@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""void __cdecl OutFun2DP(char *,int,int,int,int,double *,double *,double *)" (?OutFun2DP@@YAXPADHHHHPAN11@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""void __cdecl BndAExch1D(int,int,double *,double *,int,int,double *,double *)" (?BndAExch1D@@YAXHHPAN0HH00@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""int __cdecl imax(int,int)" (?imax@@YAHHH@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""int __cdecl fclose_m(struct _iobuf * *)" (?fclose_m@@YAHPAPAU_iobuf@@@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ "_MPI_Finalize@0"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""int __cdecl prog_rightpn(int,int,int,int,int,double *,double *,double *,double *,double *,double *,double *,double *,double *)" (?prog_rightpn@@YAHHHHHHPAN00000000@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""int __cdecl fopen_m(struct _iobuf * *,char const *,char const *)" (?fopen_m@@YAHPAPAU_iobuf@@PBD1@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ "_MPI_Wtime@0"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ "_MPI_Allreduce@24"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""void __cdecl mpierr(char *,int)" (?mpierr@@YAXPADH@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ "_MPI_Comm_create@12"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""int __cdecl imin(int,int)" (?imin@@YAHHH@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ "_MPI_Comm_group@8"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""double __cdecl dabs(double)" (?dabs@@YANN@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""double __cdecl dmax(double,double)" (?dmax@@YANNN@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""void __cdecl MyRange(int,int,int,int,int *,int *,int *)" (?MyRange@@YAXHHHHPAH00@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ "_MPI_Bcast@20"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""double __cdecl dmin(double,double)" (?dmin@@YANNN@Z)"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ "_MPI_Group_incl@16"
-     1>LookIn20.obj : error LNK2001: неразрешенный внешний символ ""void __cdecl My2DGrid(int,int,int,int,int *,int *,int *,int *)" (?My2DGrid@@YAXHHHHPAH000@Z)"
-     1>mycom.obj : error LNK2001: неразрешенный внешний символ "_gettimeofday"
-     1>myio.obj : error LNK2001: неразрешенный внешний символ "_MPI_Recv@28"
-     1>myio.obj : error LNK2001: неразрешенный внешний символ "_MPI_Barrier@4"
-     1>myio.obj : error LNK2001: неразрешенный внешний символ "_MPI_Send@24"
-     1>mynet.obj : error LNK2001: неразрешенный внешний символ "_MPI_Abort@8"
-     1>mynet.obj : error LNK2001: неразрешенный внешний символ "_MPI_Irecv@28"
-     1>mynet.obj : error LNK2001: неразрешенный внешний символ "_MPI_Comm_size@8"
-     1>mynet.obj : error LNK2001: неразрешенный внешний символ "_MPI_Get_processor_name@8"
-     1>mynet.obj : error LNK2001: неразрешенный внешний символ "_MPI_Sendrecv@48"
-     1>mynet.obj : error LNK2001: неразрешенный внешний символ "_MPI_Init@8"
-     1>mynet.obj : error LNK2001: неразрешенный внешний символ "_MPI_Isend@28"
-     1>mynet.obj : error LNK2001: неразрешенный внешний символ "_MPI_Wtick@0"
-     1>mynet.obj : error LNK2001: неразрешенный внешний символ "_MPI_Comm_rank@8"
-     1>mynet.obj : error LNK2001: неразрешенный внешний символ "_MPI_Waitall@12"
-     1>D:\Projects\LookIn20\Release\LookIn20.exe : fatal error LNK1120: неразрешенных внешних элементов: 35
+     1>d:\projects\lookin20\lookin20\mynet.h(1): fatal error C1083: Не удается открыть файл включение: mpi.h: No such file or directory
      1>Построение проекта "D:\Projects\LookIn20\LookIn20\LookIn20.vcxproj" завершено (целевые объекты Rebuild) с ошибкой.
 
 Сбой построения.
 
-Затраченное время: 00:00:00.99
+Затраченное время: 00:00:00.89
