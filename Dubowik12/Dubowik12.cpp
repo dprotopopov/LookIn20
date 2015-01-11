@@ -234,7 +234,7 @@ int main(int argc, char *argv[])
 		tau = tmax/ntm;
 		tau = dmin(tau,0.5 * hx2 / dmax(k1,k2));
 		tau = dmin(tau,0.5 * hx / sqrt(dmax(k1,k2)));
-		s0 = dmin(tmax/tau,1000000000.0); ntm = imin(ntm,(int)s0);
+		s0 = dmin(tmax/tau,1000000000.0); ntm = imax(ntm,(int)s0);
 
 		MyRange(np,mp,0,nx,&i1,&i2,&nc);
 		ncm = (nc-1)<<it; // Старший индекс в локальном массиве
@@ -420,7 +420,7 @@ int main(int argc, char *argv[])
 
 		t1 = MPI_Wtime() - t1;
 
-		sprintf(sname,"%s_%02d.dat",vname,np);
+		sprintf(sname,"%s_%02d_%02d.dat",vname,np,it);
 		OutFun1DP(sname,np,mp,nc,xx,y1);
 
 		fprintf(Fo,"ntv=%d tv=%le gt=%le time=%le\n",ntv,tv,gt,t1);

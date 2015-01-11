@@ -361,7 +361,7 @@ int main(int argc, char *argv[])
 		h2 = (b2-a2)/(n2<<it); h22 = h2 * h2;
 		tau = tmax/ntm;
 		tau = dmin(tau,0.25 * dmin(h12,h22) / dmax(k1,k2)); 
-		s0 = dmin(tmax/tau,1000000000.0); ntm = imin(ntm,(int)s0);
+		s0 = dmin(tmax/tau,1000000000.0); ntm = imax(ntm,(int)s0);
 
 		fprintf(Fo,"u10=%le omg0=%le omg1=%le\n",u10,omg0,omg1);
 		fprintf(Fo,"h1=%le h2=%le tau=%le ntm=%d\n",h1,h2,tau,ntm);
@@ -498,8 +498,8 @@ int main(int argc, char *argv[])
 			// то есть присваиваем ноль дифференциалу
 			if (debug&0x04) { fprintf(Fo,"Begin diff by x2 let zero\n");fflush(Fo); }
 
-			if (mp_t<0) { // Если нет строк выше
-				for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + nc2m; yy2[m]=g22(tv)*h2; }
+			if (mp_b<0) { // Если нет строк ниже
+				for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + 0; yy2[m]=g21(tv)*h2; }
 			}
 
 			if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2 let zero\n");fflush(Fo); }
@@ -578,8 +578,8 @@ int main(int argc, char *argv[])
 			// то есть присваиваем ноль дифференциалу
 			if (debug&0x04) { fprintf(Fo,"Begin diff by x2 let zero\n");fflush(Fo); }
 
-			if (mp_b<0) { // Если нет строк ниже
-				for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + 0; yy2[m]=-g21(tv)*h2; }
+			if (mp_t<0) { // Если нет строк выше
+				for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + nc2m; yy2[m]=-g22(tv)*h2; }
 			}
 
 			if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2 let zero\n");fflush(Fo); }
@@ -814,7 +814,7 @@ int main(int argc, char *argv[])
 
 		t1 = MPI_Wtime() - t1; // Замер времени от начала работы программы
 
-		sprintf(sname,"%s_%02d.dat",vname,np);
+		sprintf(sname,"%s_%02d_%02d.dat",vname,np,it);
 		OutFun2DP(sname,np,mp,nc1,nc2,xx1,xx2,yy1);
 
 		fprintf(Fo,"ntv=%d tv=%le gt=%le time=%le\n",ntv,tv,gt,t1);fflush(Fo);
