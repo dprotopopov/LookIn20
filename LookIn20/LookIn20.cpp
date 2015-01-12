@@ -52,15 +52,16 @@ static double tv, u10, omg0, omg1, gt;
 double k(double x1, double x2);
 double k(double x1, double x2) {
 	double abcab[] = {x11, x12, x21, x22, x31, x32, x11, x12, x21, x22};
-	int i;
-	for(i=0; i<3; i++){
-		double v0[] = {abcab[IDX(0,i+1,2)]-abcab[IDX(0,i,2)],abcab[IDX(1,i+1,2)]-abcab[IDX(1,i,2)]};
-		double v1[] = {abcab[IDX(0,i+2,2)]-abcab[IDX(0,i,2)],abcab[IDX(1,i+1,2)]-abcab[IDX(1,i,2)]};
-		double v2[] = {                 x1-abcab[IDX(0,i,2)],                 x2-abcab[IDX(1,i,2)]};
-		double sq1 = v0[0]*v1[1]-v0[1]*v1[0];
-		double sq2 = v0[0]*v2[1]-v0[1]*v2[0];
-		if(sq1*sq2<0.0) return k2;
-	}
+	double v0[] = {abcab[IDX(0,0,2)]-x1,abcab[IDX(1,0,2)]-x2};
+	double v1[] = {abcab[IDX(0,1,2)]-x1,abcab[IDX(1,1,2)]-x2};
+	double v2[] = {abcab[IDX(0,2,2)]-x1,abcab[IDX(1,2,2)]-x2};
+	double w1[] = {abcab[IDX(0,1,2)]-abcab[IDX(0,0,2)],abcab[IDX(1,1,2)]-abcab[IDX(1,0,2)]};
+	double w2[] = {abcab[IDX(0,2,2)]-abcab[IDX(0,0,2)],abcab[IDX(1,2,2)]-abcab[IDX(1,0,2)]};
+	double sq1 = dabs(v0[0]*v1[1]-v0[1]*v1[0]);
+	double sq2 = dabs(v1[0]*v2[1]-v1[1]*v2[0]);
+	double sq3 = dabs(v0[0]*v2[1]-v0[1]*v2[0]);
+	double sq = dabs(w1[0]*w2[1]-w1[1]*w2[0]);
+	if(dabs(sq-sq1-sq2-sq3)<0.000001) return k2;
 	return k1;
 }
 
@@ -400,6 +401,16 @@ int main(int argc, char *argv[])
 		for (i1=0; i1<nc1; i1++) xx1[i1] = a1 + h1 * (i11 + i1); // grid for x1
 		for (i2=0; i2<nc2; i2++) xx2[i2] = a2 + h2 * (i21 + i2); // grid for x2
 
+		for (i2=0; i2<nc2; i2++){
+			for (i1=0; i1<nc1; i1++) {
+				m = LIDX(i1,i2,nc1,nc2);
+				yy1[m] = k(xx1[i1],xx2[i2]);
+			}
+		}
+
+		sprintf(sname,"%s_%02d_k.dat",vname,np);
+		OutFun2DP(sname,np,mp,nc1,nc2,xx1,xx2,yy1);
+
 		ntv = 0; tv = 0.0; gt = 1.0;
 
 		for (i2=0; i2<nc2; i2++){
@@ -442,6 +453,18 @@ int main(int argc, char *argv[])
 			}
 		}
 
+		sprintf(sname,"%s_%02d_aa1.dat",vname,np);
+		OutFun2DP(sname,np,mp,nc1,nc2,xx1,xx2,aa1);
+
+		sprintf(sname,"%s_%02d_bb1.dat",vname,np);
+		OutFun2DP(sname,np,mp,nc1,nc2,xx1,xx2,bb1);
+
+		sprintf(sname,"%s_%02d_aa2.dat",vname,np);
+		OutFun2DP(sname,np,mp,nc1,nc2,xx1,xx2,aa2);
+
+		sprintf(sname,"%s_%02d_bb2.dat",vname,np);
+		OutFun2DP(sname,np,mp,nc1,nc2,xx1,xx2,bb2);
+
 		// Time loop:
 
 		do {
@@ -469,91 +492,95 @@ int main(int argc, char *argv[])
 			// чтобы добавить крайние условия для производной по x2
 			if (debug&0x04) { fprintf(Fo,"Begin diff by x2\n");fflush(Fo); }
 
-			// Вычисляем дифференциал по оси x2 следующее минус текущее
-			// Задаём граничные условия для производной по x2
-			// то есть присваиваем ноль дифференциалу по верхней границе
-			// Интегрируем обратно по оси i2 прогонкой по оси x2
-			// Это равносильно присвоению элементу верхней грацицы значения
-			// предыдущего элемента
+			//// Вычисляем дифференциал по оси x2 следующее минус текущее
+			//// Задаём граничные условия для производной по x2
+			//// то есть присваиваем ноль дифференциалу по верхней границе
+			//// Интегрируем обратно по оси i2 прогонкой по оси x2
+			//// Это равносильно присвоению элементу верхней грацицы значения
+			//// предыдущего элемента
 
-			// Вычисляем дифференциал по оси x2
-			// Следующее минус текущее
+			//// Вычисляем дифференциал по оси x2
+			//// Следующее минус текущее
 
-			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); ss_b[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); rr_b[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); ss_t[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); rr_t[i1] = yy1[m]; }
+			//for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); ss_b[i1] = yy1[m]; }
+			//for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); rr_b[i1] = yy1[m]; }
+			//for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); ss_t[i1] = yy1[m]; }
+			//for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); rr_t[i1] = yy1[m]; }
 
-			if(np2>1){
-				// Обмениваемся копиями крайних строк фрагмента матрицы с соседями
+			//if(np2>1){
+			//	// Обмениваемся копиями крайних строк фрагмента матрицы с соседями
 
-				if (debug&0x02) { fprintf(Fo,"Begin BndAExch1D\n");fflush(Fo); }
-				BndAExch1D(mp_b,nc1,ss_b,rr_b,
-					mp_t,nc1,ss_t,rr_t);
-				if (debug&0x02) { fprintf(Fo,"\t\tEnd BndAExch1D\n");fflush(Fo); }
-			}
+			//	if (debug&0x02) { fprintf(Fo,"Begin BndAExch1D\n");fflush(Fo); }
+			//	BndAExch1D(mp_b,nc1,ss_b,rr_b,
+			//		mp_t,nc1,ss_t,rr_t);
+			//	if (debug&0x02) { fprintf(Fo,"\t\tEnd BndAExch1D\n");fflush(Fo); }
+			//}
 
-			for (m=0; m<nc12; m++) {
-				i1=m%nc1;
-				i2=m/nc1;
-				j1 = i11 + i1;
-				j2 = i21 + i2;
-				id1 = nc1 * i2 + i1 - nc1; // Предыдущий элемент по столбцу
-				id2 = nc1 * i2 + i1 + nc1; // Следующий элемент по столбцу
-				s0=yy1[m];
-				s1=(i2==0)?rr_b[i1]:yy1[id1];
-				s2=(i2==nc2m)?rr_t[i1]:yy1[id2];
-				yy2[m]=1.0*(s2-s0)+0.0*(s1-s0);
-			}
+			//for (m=0; m<nc12; m++) {
+			//	i1=m%nc1;
+			//	i2=m/nc1;
+			//	j1 = i11 + i1;
+			//	j2 = i21 + i2;
+			//	id1 = nc1 * i2 + i1 - nc1; // Предыдущий элемент по столбцу
+			//	id2 = nc1 * i2 + i1 + nc1; // Следующий элемент по столбцу
+			//	s0=yy1[m];
+			//	s1=(i2==0)?rr_b[i1]:yy1[id1];
+			//	s2=(i2==nc2m)?rr_t[i1]:yy1[id2];
+			//	yy2[m]=1.0*(s2-s0)+0.0*(s1-s0);
+			//}
 
-			if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2\n");fflush(Fo); }
+			//if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2\n");fflush(Fo); }
 
-			// Задаём граничные условия для производной по x2
-			// то есть присваиваем ноль дифференциалу
-			if (debug&0x04) { fprintf(Fo,"Begin diff by x2 let zero\n");fflush(Fo); }
+			//// Задаём граничные условия для производной по x2
+			//// то есть присваиваем ноль дифференциалу
+			//if (debug&0x04) { fprintf(Fo,"Begin diff by x2 let zero\n");fflush(Fo); }
 
-			if (mp_b<0) { // Если нет строк ниже
-				for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); yy2[m]=g21(tv)*h2; }
-			}
-			if (mp_t<0) { // Если нет строк ниже
-				for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); yy2[m]=g22(tv)*h2; }
-			}
+			//if (mp_b<0) { // Если нет строк ниже
+			//	for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); yy2[m]=g21(tv)*h2; }
+			//}
+			//if (mp_t<0) { // Если нет строк ниже
+			//	for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); yy2[m]=g22(tv)*h2; }
+			//}
 
-			if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2 let zero\n");fflush(Fo); }
+			//if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2 let zero\n");fflush(Fo); }
 
-			// Интегрируем обратно по оси i2 прогонкой по оси x2
-			// чтобы восстановить исходную функцию с которой сейчас работаем
-			if (debug&0x04) { fprintf(Fo,"Begin restore diff by x2\n");fflush(Fo); }
+			//// Интегрируем обратно по оси i2 прогонкой по оси x2
+			//// чтобы восстановить исходную функцию с которой сейчас работаем
+			//if (debug&0x04) { fprintf(Fo,"Begin restore diff by x2\n");fflush(Fo); }
 
-			for (i1=0; i1<nc1; i1++) {
-				j1 = i11 + i1;
+			//for (i1=0; i1<nc1; i1++) {
+			//	j1 = i11 + i1;
 
-				for (i2=0; i2<nc2; i2++) {
-					j2 = i21 + i2;
-					m = LIDX(i1,i2,nc1,nc2);
-					//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
-					//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
-					//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
-					aa[i2] = 0.0; bb[i2] = 1.0; cc[i2] = 1.0; ff[i2] = yy2[m];
-				}
+			//	for (i2=0; i2<nc2; i2++) {
+			//		j2 = i21 + i2;
+			//		m = LIDX(i1,i2,nc1,nc2);
+			//		//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
+			//		//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
+			//		//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
+			//		aa[i2] = 0.0; bb[i2] = 1.0; cc[i2] = 1.0; ff[i2] = yy2[m];
+			//	}
 
-				// Задание ведущего элемента
-				if (debug&0x04) { fprintf(Fo,"Begin let main\n");fflush(Fo); }
-				if(mp_b<0) { aa[0] = 0.0; bb[0] = 0.0; cc[0] = 1.0; ff[0] = yy1[0];}
-				if(mp_t<0) { aa[nc2m] = 0.0; bb[nc2m] = 0.0; cc[nc2m] = 1.0; ff[nc2m] = yy1[nc2m];}
-				if (debug&0x04) { fprintf(Fo,"\t\tEnd let main\n");fflush(Fo); }
+			//	// Задание ведущего элемента
+			//	if (debug&0x04) { fprintf(Fo,"Begin let main\n");fflush(Fo); }
+			//	if(mp_b<0) { aa[0] = 0.0; bb[0] = 0.0; cc[0] = 1.0; ff[0] = yy1[0];}
+			//	if(mp_t<0) { aa[nc2m] = 0.0; bb[nc2m] = 0.0; cc[nc2m] = 1.0; ff[nc2m] = yy1[nc2m];}
+			//	if (debug&0x04) { fprintf(Fo,"\t\tEnd let main\n");fflush(Fo); }
 
-				if (debug&0x02) { fprintf(Fo,"Begin prog_rightpn\n");fflush(Fo); }
-				ier = prog_rightpn(np2,mp2,cm2,nc2,0,aa,bb,cc,ff,al,y1,y2,y3,y4);
-				if (debug&0x01) { fprintf(Fo,"\tprog_rightpn returns %d\n",ier);fflush(Fo); }
-				if (debug&0x02) { fprintf(Fo,"\t\tEnd prog_rightpn\n");fflush(Fo); }
+			//	if (debug&0x02) { fprintf(Fo,"Begin prog_rightpn\n");fflush(Fo); }
+			//	ier = prog_rightpn(np2,mp2,cm2,nc2,0,aa,bb,cc,ff,al,y1,y2,y3,y4);
+			//	if (debug&0x01) { fprintf(Fo,"\tprog_rightpn returns %d\n",ier);fflush(Fo); }
+			//	if (debug&0x02) { fprintf(Fo,"\t\tEnd prog_rightpn\n");fflush(Fo); }
 
-				for (i2=0; i2<nc2; i2++) { m = LIDX(i1,i2,nc1,nc2); yy1[m] = y1[i2]; }
+			//	for (i2=0; i2<nc2; i2++) { m = LIDX(i1,i2,nc1,nc2); yy1[m] = y1[i2]; }
+			//}
+
+			if(ntv==1000){
+				sprintf(sname,"%s_%02d_ntv.dat",vname,np);
+				OutFun2DP(sname,np,mp,nc1,nc2,xx1,xx2,yy1);
 			}
 
 			// Сохраняем предыдущее значение
 			for (m=0; m<nc12; m++) yy0[m] = yy1[m];
-
 
 			// Модифицированная формула из семинара 10
 
