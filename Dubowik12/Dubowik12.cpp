@@ -17,6 +17,10 @@
 #include "myio.h"
 #include "myprog.h"
 
+#define IDX(i,j,n)					((n)*(j)+(i))
+#define LIDX(i1,i2,nc1,nc2)			(IDX((i1),(i2),(nc1)))
+#define GIDX(i1,i2,i11,i21,n1,n2)	(LIDX((i11+i1),(i21+i2),(n1+1),(n2+1)))
+
 //static int debug=0x08+0x04+0x02+0x01;
 static int debug=0;
 static int np, mp, nl, ier, lp;

@@ -23,6 +23,10 @@
 #include "myio.h"
 #include "myprog.h"
 
+#define IDX(i,j,n)					((n)*(j)+(i))
+#define LIDX(i1,i2,nc1,nc2)			(IDX((i1),(i2),(nc1)))
+#define GIDX(i1,i2,i11,i21,n1,n2)	(LIDX((i11+i1),(i21+i2),(n1+1),(n2+1)))
+
 //static int debug=0x08+0x04+0x02+0x01;
 static int debug=0;
 static int np, mp, nl, ier, lp;
@@ -50,9 +54,9 @@ double k(double x1, double x2) {
 	double abcab[] = {x11, x12, x21, x22, x31, x32, x11, x12, x21, x22};
 	int i;
 	for(i=0; i<3; i++){
-		double v0[] = {abcab[2*i+2]-abcab[2*i],abcab[2*i+3]-abcab[2*i+1]};
-		double v1[] = {abcab[2*i+4]-abcab[2*i],abcab[2*i+5]-abcab[2*i+1]};
-		double v2[] = {x1-abcab[2*i],x2-abcab[2*i+1]};
+		double v0[] = {abcab[IDX(0,i+1,2)]-abcab[IDX(0,i,2)],abcab[IDX(1,i+1,2)]-abcab[IDX(1,i,2)]};
+		double v1[] = {abcab[IDX(0,i+2,2)]-abcab[IDX(0,i,2)],abcab[IDX(1,i+1,2)]-abcab[IDX(1,i,2)]};
+		double v2[] = {                 x1-abcab[IDX(0,i,2)],                 x2-abcab[IDX(1,i,2)]};
 		double sq1 = v0[0]*v1[1]-v0[1]*v1[0];
 		double sq2 = v0[0]*v2[1]-v0[1]*v2[0];
 		if(sq1*sq2<0.0) return k2;
@@ -293,7 +297,7 @@ int main(int argc, char *argv[])
 	MPI_Comm_create(MPI_COMM_WORLD,gr2,&cm2); 
 
 
-	// Рассчёты для максимального массива
+	// Расчёты для максимального массива
 	// Вычисляем максимальные размеры массивов и аллокируем их
 	MyRange(np1,mp1,0,n1,&i11,&i12,&nc1); 
 	MyRange(np2,mp2,0,n2,&i21,&i22,&nc2); 
@@ -307,7 +311,6 @@ int main(int argc, char *argv[])
 	nc2=nc2m+1; // Размер локального массива
 	nc12 = nc1 * nc2; // Размер локального массива
 
-	nc12 = nc1 * nc2;
 	ncp1 = 2*(np1-1); ncx1 = imax(nc1,ncp1);
 	ncp2 = 2*(np2-1); ncx2 = imax(nc2,ncp2);
 	ncp = imax(ncp1,ncp2); ncx = imax(ncx1,ncx2);
@@ -401,7 +404,7 @@ int main(int argc, char *argv[])
 
 		for (i2=0; i2<nc2; i2++){
 			for (i1=0; i1<nc1; i1++) {
-				m = nc1 * i2 + i1;
+				m = LIDX(i1,i2,nc1,nc2);
 				yy1[m] = g0(xx1[i1],xx2[i2]);
 			}
 		}
@@ -413,7 +416,7 @@ int main(int argc, char *argv[])
 			j2 = i21 + i2;
 			for (i1=0; i1<nc1; i1++) {
 				j1 = i11 + i1;
-				m = nc1 * i2 + i1;
+				m = LIDX(i1,i2,nc1,nc2);
 
 				if ((j1==0) || (j1==(n1<<it))) {
 					aa1[m] = 0.0; bb1[m] = 0.0;
@@ -451,6 +454,17 @@ int main(int argc, char *argv[])
 			// НАЧАЛО АЛГОРИТМА ШАГА
 			if (debug&0x08) { fprintf(Fo,"Begin algo\n");fflush(Fo); }
 
+			// Задаём граничные условия по x1
+			if (debug&0x04) { fprintf(Fo,"Begin let by x1\n");fflush(Fo); }
+
+			if (mp_l<0) { // Если нет колонок левее
+				for (i2=0; i2<nc2; i2++) { m = LIDX(0,i2,nc1,nc2); yy1[m]=g11(tv); }
+			}
+			if (mp_r<0) { // Если нет колонок правее
+				for (i2=0; i2<nc2; i2++) { m = LIDX(nc1m,i2,nc1,nc2); yy1[m]=g12(tv); }
+			}
+			if (debug&0x04) { fprintf(Fo,"\t\tEnd let by x1\n");fflush(Fo); }
+
 			// Берём дифференциал по оси x2
 			// чтобы добавить крайние условия для производной по x2
 			if (debug&0x04) { fprintf(Fo,"Begin diff by x2\n");fflush(Fo); }
@@ -465,10 +479,10 @@ int main(int argc, char *argv[])
 			// Вычисляем дифференциал по оси x2
 			// Следующее минус текущее
 
-			for (i1=0; i1<nc1; i1++) { m = nc1 * 0 + i1; ss_b[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = nc1 * 0 + i1; rr_b[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = nc1 * nc2m + i1; ss_t[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = nc1 * nc2m + i1; rr_t[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); ss_b[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); rr_b[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); ss_t[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); rr_t[i1] = yy1[m]; }
 
 			if(np2>1){
 				// Обмениваемся копиями крайних строк фрагмента матрицы с соседями
@@ -499,7 +513,10 @@ int main(int argc, char *argv[])
 			if (debug&0x04) { fprintf(Fo,"Begin diff by x2 let zero\n");fflush(Fo); }
 
 			if (mp_b<0) { // Если нет строк ниже
-				for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + 0; yy2[m]=g21(tv)*h2; }
+				for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); yy2[m]=g21(tv)*h2; }
+			}
+			if (mp_t<0) { // Если нет строк ниже
+				for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); yy2[m]=g22(tv)*h2; }
 			}
 
 			if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2 let zero\n");fflush(Fo); }
@@ -513,95 +530,16 @@ int main(int argc, char *argv[])
 
 				for (i2=0; i2<nc2; i2++) {
 					j2 = i21 + i2;
-					m = nc1 * i2 + i1;
+					m = LIDX(i1,i2,nc1,nc2);
 					//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
 					//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
 					//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
-					aa[i2] = 0.0; bb[i2] = 1.0; cc[i2] = 1.0; ff[i2] = -yy2[m];
+					aa[i2] = 0.0; bb[i2] = 1.0; cc[i2] = 1.0; ff[i2] = yy2[m];
 				}
 
 				// Задание ведущего элемента
 				if (debug&0x04) { fprintf(Fo,"Begin let main\n");fflush(Fo); }
 				if(mp_b<0) { aa[0] = 0.0; bb[0] = 0.0; cc[0] = 1.0; ff[0] = yy1[0];}
-				if (debug&0x04) { fprintf(Fo,"\t\tEnd let main\n");fflush(Fo); }
-
-				if (debug&0x02) { fprintf(Fo,"Begin prog_rightpn\n");fflush(Fo); }
-				ier = prog_rightpn(np2,mp2,cm2,nc2,0,aa,bb,cc,ff,al,y1,y2,y3,y4);
-				if (debug&0x01) { fprintf(Fo,"\tprog_rightpn returns %d\n",ier);fflush(Fo); }
-				if (debug&0x02) { fprintf(Fo,"\t\tEnd prog_rightpn\n");fflush(Fo); }
-
-				for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + i1; yy1[m] = y1[i2]; }
-			}
-
-
-			// Вычисляем минус дифференциал по оси x2 предыдущее минус текущее
-			// Задаём граничные условия для производной по x2
-			// то есть присваиваем минус ноль дифференциалу по верхней границе
-			// Интегрируем обратно по оси i2 прогонкой по оси x2
-			// Это равносильно присвоению элементу нижней грацицы значения
-			// следующего элемента
-
-			// Вычисляем минус дифференциал по оси x2
-			// Предыдущее минус текущее
-			if (debug&0x04) { fprintf(Fo,"Begin diff by x2\n");fflush(Fo); }
-
-			for (i1=0; i1<nc1; i1++) { m = nc1 * 0 + i1; ss_b[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = nc1 * 0 + i1; rr_b[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = nc1 * nc2m + i1; ss_t[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = nc1 * nc2m + i1; rr_t[i1] = yy1[m]; }
-
-			if(np2>1){
-				// Обмениваемся копиями крайних строк фрагмента матрицы с соседями
-
-				if (debug&0x02) { fprintf(Fo,"Begin BndAExch1D\n");fflush(Fo); }
-				BndAExch1D(mp_b,nc1,ss_b,rr_b,
-					mp_t,nc1,ss_t,rr_t);
-				if (debug&0x02) { fprintf(Fo,"\t\tEnd BndAExch1D\n");fflush(Fo); }
-			}
-
-			for (m=0; m<nc12; m++) {
-				i1=m%nc1;
-				i2=m/nc1;
-				j1 = i11 + i1;
-				j2 = i21 + i2;
-				id1 = nc1 * i2 + i1 - nc1; // Предыдущий элемент по столбцу
-				id2 = nc1 * i2 + i1 + nc1; // Следующий элемент по столбцу
-				s0=yy1[m];
-				s1=(i2==0)?rr_b[i1]:yy1[id1];
-				s2=(i2==nc2m)?rr_t[i1]:yy1[id2];
-				yy2[m]=0.0*(s2-s0)+1.0*(s1-s0);
-			}
-
-			if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2\n");fflush(Fo); }
-
-			// Задаём граничные условия для производной по x2
-			// то есть присваиваем ноль дифференциалу
-			if (debug&0x04) { fprintf(Fo,"Begin diff by x2 let zero\n");fflush(Fo); }
-
-			if (mp_t<0) { // Если нет строк выше
-				for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + nc2m; yy2[m]=-g22(tv)*h2; }
-			}
-
-			if (debug&0x04) { fprintf(Fo,"\t\tEnd diff by x2 let zero\n");fflush(Fo); }
-
-			// Интегрируем обратно по оси i2 прогонкой по оси x2
-			// чтобы восстановить исходную функцию с которой сейчас работаем
-			if (debug&0x04) { fprintf(Fo,"Begin restore diff by x2\n");fflush(Fo); }
-
-			for (i1=0; i1<nc1; i1++) {
-				j1 = i11 + i1;
-
-				for (i2=0; i2<nc2; i2++) {
-					j2 = i21 + i2;
-					m = nc1 * i2 + i1;
-					//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
-					//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
-					//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
-					aa[i2] = 1.0; bb[i2] = 0.0; cc[i2] = 1.0; ff[i2] = -yy2[m];
-				}
-
-				// Задание ведущего элемента
-				if (debug&0x04) { fprintf(Fo,"Begin let main\n");fflush(Fo); }
 				if(mp_t<0) { aa[nc2m] = 0.0; bb[nc2m] = 0.0; cc[nc2m] = 1.0; ff[nc2m] = yy1[nc2m];}
 				if (debug&0x04) { fprintf(Fo,"\t\tEnd let main\n");fflush(Fo); }
 
@@ -610,21 +548,8 @@ int main(int argc, char *argv[])
 				if (debug&0x01) { fprintf(Fo,"\tprog_rightpn returns %d\n",ier);fflush(Fo); }
 				if (debug&0x02) { fprintf(Fo,"\t\tEnd prog_rightpn\n");fflush(Fo); }
 
-				for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + i1; yy1[m] = y1[i2]; }
+				for (i2=0; i2<nc2; i2++) { m = LIDX(i1,i2,nc1,nc2); yy1[m] = y1[i2]; }
 			}
-
-			if (debug&0x04) { fprintf(Fo,"\t\tEnd restore diff by x2\n");fflush(Fo); }
-
-			// Задаём граничные условия по x1
-			if (debug&0x04) { fprintf(Fo,"Begin let by x1\n");fflush(Fo); }
-
-			if (mp_l<0) { // Если нет колонок левее
-				for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + 0; yy1[m]=g11(tv); }
-			}
-			if (mp_r<0) { // Если нет колонок правее
-				for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + nc1m; yy1[m]=g12(tv); }
-			}
-			if (debug&0x04) { fprintf(Fo,"\t\tEnd let by x1\n");fflush(Fo); }
 
 			// Сохраняем предыдущее значение
 			for (m=0; m<nc12; m++) yy0[m] = yy1[m];
@@ -643,10 +568,10 @@ int main(int argc, char *argv[])
 			// Делаем полшага по времени
 			if (debug&0x04) { fprintf(Fo,"Begin first half by x2\n");fflush(Fo); }
 
-			for (i1=0; i1<nc1; i1++) { m = nc1 * 0 + i1; ss_b[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = nc1 * 0 + i1; rr_b[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = nc1 * nc2m + i1; ss_t[i1] = yy1[m]; }
-			for (i1=0; i1<nc1; i1++) { m = nc1 * nc2m + i1; rr_t[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); ss_b[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,0,nc1,nc2); rr_b[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); ss_t[i1] = yy1[m]; }
+			for (i1=0; i1<nc1; i1++) { m = LIDX(i1,nc2m,nc1,nc2); rr_t[i1] = yy1[m]; }
 
 			if(np2>1){
 				// Обмениваемся копиями крайних строк фрагмента матрицы с соседями
@@ -689,7 +614,7 @@ int main(int argc, char *argv[])
 				for (i1=0; i1<nc1; i1++) {
 					j1 = i11 + i1;
 
-					m = nc1 * i2 + i1;
+					m = LIDX(i1,i2,nc1,nc2);
 					//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
 					//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
 					//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
@@ -701,7 +626,7 @@ int main(int argc, char *argv[])
 				if (debug&0x01) { fprintf(Fo,"\tprog_rightpn returns %d\n",ier);fflush(Fo); }
 				if (debug&0x02) { fprintf(Fo,"\t\tEnd prog_rightpn\n");fflush(Fo); }
 
-				for (i1=0; i1<nc1; i1++) { m = nc1 * i2 + i1; yy1[m] = y1[i2]; }
+				for (i1=0; i1<nc1; i1++) { m = LIDX(i1,i2,nc1,nc2); yy1[m] = y1[i2]; }
 			}
 
 			if (debug&0x04) { fprintf(Fo,"\t\tEnd restore first half by x1\n");fflush(Fo); }
@@ -710,10 +635,10 @@ int main(int argc, char *argv[])
 
 			if (debug&0x04) { fprintf(Fo,"Begin second half by x1\n");fflush(Fo); }
 
-			for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + 0; ss_l[i2] = yy1[m]; }
-			for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + 0; rr_l[i2] = yy1[m]; }
-			for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + nc1m; ss_r[i2] = yy1[m]; }
-			for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + nc1m; rr_r[i2] = yy1[m]; }
+			for (i2=0; i2<nc2; i2++) { m = LIDX(0,i2,nc1,nc2); ss_l[i2] = yy1[m]; }
+			for (i2=0; i2<nc2; i2++) { m = LIDX(0,i2,nc1,nc2); rr_l[i2] = yy1[m]; }
+			for (i2=0; i2<nc2; i2++) { m = LIDX(nc1m,i2,nc1,nc2); ss_r[i2] = yy1[m]; }
+			for (i2=0; i2<nc2; i2++) { m = LIDX(nc1m,i2,nc1,nc2); rr_r[i2] = yy1[m]; }
 
 			if(np1>1){
 				// Обмениваемся копиями крайних столбцов фрагмента матрицы с соседями
@@ -756,7 +681,7 @@ int main(int argc, char *argv[])
 				for (i2=0; i2<nc2; i2++) {
 					j2 = i21 + i2;
 
-					m = nc1 * i2 + i1;
+					m = LIDX(i1,i2,nc1,nc2);
 					//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
 					//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
 					//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
@@ -768,7 +693,7 @@ int main(int argc, char *argv[])
 				if (debug&0x01) { fprintf(Fo,"\tprog_rightpn returns %d\n",ier);fflush(Fo); }
 				if (debug&0x02) { fprintf(Fo,"\t\tEnd prog_rightpn\n");fflush(Fo); }
 
-				for (i2=0; i2<nc2; i2++) { m = nc1 * i2 + i1; yy1[m] = y1[i2]; }
+				for (i2=0; i2<nc2; i2++) { m = LIDX(i1,i2,nc1,nc2); yy1[m] = y1[i2]; }
 			}
 
 			if (debug&0x04) { fprintf(Fo,"\t\tEnd restore second half by x2\n");fflush(Fo); }
@@ -804,7 +729,7 @@ int main(int argc, char *argv[])
 					j2 = i21 + i2;
 					for (i1=0; i1<nc1; i1++) {
 						j1 = i11 + i1;
-						m = nc1 * i2 + i1;
+						m = LIDX(i1,i2,nc1,nc2);
 						fprintf(Fo,"i1=%8d i2=%8d x1=%12le x2=%12le y1=%12le\n",
 							j1,j2,xx1[i1],xx2[i2],yy1[m]);fflush(Fo);
 					}
