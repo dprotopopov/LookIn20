@@ -574,10 +574,10 @@ int main(int argc, char *argv[])
 			//	for (i2=0; i2<nc2; i2++) { m = LIDX(i1,i2,nc1,nc2); yy1[m] = y1[i2]; }
 			//}
 
-			if(ntv==1000){
-				sprintf(sname,"%s_%02d_ntv.dat",vname,np);
-				OutFun2DP(sname,np,mp,nc1,nc2,xx1,xx2,yy1);
-			}
+			//if(ntv==1000){
+			//	sprintf(sname,"%s_%02d_ntv.dat",vname,np);
+			//	OutFun2DP(sname,np,mp,nc1,nc2,xx1,xx2,yy1);
+			//}
 
 			// Сохраняем предыдущее значение
 			for (m=0; m<nc12; m++) yy0[m] = yy1[m];

@@ -1,8 +1,8 @@
-// Семинар 7. Решение линейных пространственно одномерных краевых задач.
+//  Boundary problem:
 //
 //  (k(x)u')' - q(x) u = - f(x), xa < x < xb
 //
-//  u(xa) = ua, u(xb) = ub
+//  u'(xa) = ua, u'(xb) = ub
 //
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,28 +11,23 @@
 #include <math.h>
 #include "mycom.h"
 #include "mynet.h"
+#include "myio.h"
 #include "myprog.h"
 
-#define IDX(i,j,n)					((n)*(j)+(i))
-#define LIDX(i1,i2,nc1,nc2)			(IDX((i1),(i2),(nc1)))
-#define GIDX(i1,i2,i11,i21,n1,n2)	(LIDX((i11+i1),(i21+i2),(n1+1),(n2+1)))
-
-//static int debug=0x08+0x04+0x02+0x01;
-static int debug=0;
 static int np, mp, nl, ier, lp;
-static int np1, np2, mp1, mp2;
-static int mp_l, mp_r, mp_b, mp_t;
 static char pname[MPI_MAX_PROCESSOR_NAME];
 static char vname[48] = "ProNina2";
 static char sname[48];
 static MPI_Status status;
 static union_t buf;
-static double tick, t1, t2, t3;
+static double tick, t1, t2, t3, gt, epst;
+static double m11, m12, m21, m22;
+static int n, ntp, ntm, ntv;
 
 static FILE *Fi = NULL;
 static FILE *Fo = NULL;
 
-static int nx, n1, n2, n;
+static int nx, n;
 static double xa, xb, ua, ub, x0, a, b;
 
 double k(double x);
@@ -92,31 +87,85 @@ size_t round8bytes(size_t size) {
 	return q;
 }
 
+// Асинхронный циклический обмен данными между процессами
+void CircleABndExch1D(int np, int mp, 
+					  int nsl, int nrl, int nsr, int nrr,
+					  double *bsl, double *brl, double *bsr, double *brr);
+void CircleABndExch1D(int np, int mp, 
+					  int nsl, int nrl, int nsr, int nrr,
+					  double *bsl, double *brl, double *bsr, double *brr)
+{
+	int i, n, m;
+	static MPI_Status Sta[4];
+	static MPI_Request Req[4];
+	MPI_Request *R;
+
+	R = Req; m = 0;
+
+	MPI_Irecv(brl,nrl,MPI_DOUBLE,(mp+np-1)%np,MY_TAG,MPI_COMM_WORLD,R); R++; m++;
+	MPI_Irecv(brr,nrr,MPI_DOUBLE,(mp+np+1)%np,MY_TAG,MPI_COMM_WORLD,R); R++; m++;
+	MPI_Isend(bsl,nsl,MPI_DOUBLE,(mp+np-1)%np,MY_TAG,MPI_COMM_WORLD,R); R++; m++;
+	MPI_Isend(bsr,nsr,MPI_DOUBLE,(mp+np+1)%np,MY_TAG,MPI_COMM_WORLD,R); R++; m++;
+
+	if (m>0) {
+		MPI_Waitall(m,Req,Sta);
+
+		n = 0;
+
+		for (i=0; i<m; i++)
+			if (Sta[i].MPI_ERROR != 0) n++;
+
+		if (n>0) mpierr("Bad asynchronous exchange",-101);
+	}
+}
+
 int main(int argc, char *argv[])
 {
-	int i, j, i1, i2, j1, j2;
-	int i11, i12, i21, i22;
-	int nc1, nc2, nc1m, nc2m, nc12, nc12m;
-	int nccp, nccp1, nccp2, ncp, ncp1, ncp2, ncx, ncx1, ncx2, ncpx;
+	int m, i, j, i1, i2, nc, ncm, ncp, ncx;
 	double hx, hx2, s0, s1, s2, a0, b0, c0, f0, a1, b1, c1, f1;
-	double *xx, *aa, *bb, *cc, *dd, *ee, *ff, *al;
-	double *yy1, *yy2, *yy3, *yy4;
-	double *y0, *y1, *y2, *y3, *y4;
-	double *aa0, *bb0, *cc0, *ff0;
-	double *aa1, *bb1, *cc1, *ff1;
+	double *xx, *aa, *bb, *cc, *dd, *ee, *ff, *al, *y0, *y1, *y2, *y3, *y4;
 	int id1, id2, it;
-	int ii11, ii12, ii21, ii22, nnc1, nnc2; // предыдущее вычисления
-	double **yyy1; // предыдущее вычисления
-
-	int ranks[128];
-	MPI_Group gr0, gr1, gr2;
-	MPI_Comm  cm0, cm1, cm2;
+	double *bsl, *brl, *bsr, *brr; // буферы для обмена данными между процессами
+	int ii1, ii2, nnx; // предыдущее вычисления
+	double **yy1; // предыдущее вычисления
 
 	MyNetInit(&argc,&argv,&np,&mp,&nl,pname,&tick);
 
 	fprintf(stderr,"Netsize: %d, process: %d, system: %s, tick=%12le\n",np,mp,pname,tick);
 	//sleep(1);
 
+	MyRange(np,mp,0,nx,&i1,&i2,&nc);
+	ncm = (nc-1)<<n; 
+	nc = ncm+1;
+	ncp = 2*(np-1); 
+	ncx = imax(nc,ncp);
+
+	xx = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+
+	aa = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	bb = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	cc = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	ff = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	al = (double*)(malloc(round8bytes(sizeof(double)*ncx)));
+
+	y0 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	y1 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	y2 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+
+	if (np>1) {
+		y3 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+		y4 = (double*)(malloc(round8bytes(sizeof(double)*9*ncp)));
+	}
+
+	// Буферы для обмена с соседями
+	brl = (double*)(malloc(round8bytes(sizeof(double)*2)));
+	bsl = (double*)(malloc(round8bytes(sizeof(double)*2)));
+	brr = (double*)(malloc(round8bytes(sizeof(double)*2)));
+	bsr = (double*)(malloc(round8bytes(sizeof(double)*2)));
+
+
+	yy1 = (double**)(malloc(round8bytes(sizeof(double*)*(n+1)))); // предыдущее вычисления
+	for(j=0;j<=n;j++) yy1[j] = (double*)(malloc(round8bytes(sizeof(double)*nc))); // предыдущее вычисления
 
 	sprintf(sname,"%s.p%02d",vname,mp);
 	ier = fopen_m(&Fo,sname,"wt");
@@ -131,16 +180,20 @@ int main(int argc, char *argv[])
 		i = fscanf(Fi,"x0=%le\n",&x0);
 		i = fscanf(Fi,"a=%le\n",&a);
 		i = fscanf(Fi,"b=%le\n",&b);
-		i = fscanf(Fi,"ua=%le\n",&ua);
-		i = fscanf(Fi,"ub=%le\n",&ub);
-		i = fscanf(Fi,"n1=%d\n",&n1);
-		i = fscanf(Fi,"n2=%d\n",&n2);
+		//i = fscanf(Fi,"ua=%le\n",&ua);
+		//i = fscanf(Fi,"ub=%le\n",&ub);
+		i = fscanf(Fi,"m11=%le\n",&m11);
+		i = fscanf(Fi,"m12=%le\n",&m12);
+		i = fscanf(Fi,"m21=%le\n",&m21);
+		i = fscanf(Fi,"m22=%le\n",&m22);
+		i = fscanf(Fi,"nx=%d\n",&nx);
+		i = fscanf(Fi,"epst=%le\n",&epst);
+		fscanf(Fi,"ntm=%d\n",&ntm); // максимальное количество итераций
 		i = fscanf(Fi,"n=%d\n",&n);
 		i = fscanf(Fi,"lp=%d\n",&lp);
 		fclose_m(&Fi);
-		if (argc>1) sscanf(argv[1],"%d",&n1);
-		if (argc>2) sscanf(argv[2],"%d",&n2);
-		if (argc>3) sscanf(argv[3],"%d",&n);
+		if (argc>1) sscanf(argv[1],"%d",&nx);
+		if (argc>2) sscanf(argv[2],"%d",&n);
 	}
 
 	if (np>1) {
@@ -150,12 +203,17 @@ int main(int argc, char *argv[])
 			buf.ddata[2] = x0;
 			buf.ddata[3] = a; 
 			buf.ddata[4] = b;
-			buf.ddata[5] = ua; 
-			buf.ddata[6] = ub;
-			buf.idata[100] = n1; 
-			buf.idata[101] = n2; 
+			//buf.ddata[5] = ua; 
+			//buf.ddata[6] = ub;
+			buf.ddata[7] = m11;
+			buf.ddata[8] = m12;
+			buf.ddata[9] = m21;
+			buf.ddata[10] = m22;
+			buf.ddata[14] = epst;
+			buf.idata[101] = nx; 
 			buf.idata[102] = n;
-			buf.idata[103] = lp;
+			buf.idata[103] = ntm;
+			buf.idata[104] = lp;
 		}
 		MPI_Bcast(buf.ddata,200,MPI_DOUBLE,0,MPI_COMM_WORLD);
 		if (mp>0) {
@@ -164,12 +222,17 @@ int main(int argc, char *argv[])
 			x0 = buf.ddata[2];
 			a  = buf.ddata[3]; 
 			b  = buf.ddata[4];
-			ua = buf.ddata[5]; 
-			ub = buf.ddata[6];
-			n1 = buf.idata[100]; 
-			n2 = buf.idata[101]; 
+			//ua = buf.ddata[5]; 
+			//ub = buf.ddata[6];
+			m11 = buf.ddata[7];
+			m12 = buf.ddata[8];
+			m21 = buf.ddata[9];
+			m22 = buf.ddata[10];
+			epst = buf.ddata[14];
+			nx = buf.idata[101]; 
 			n  = buf.idata[102]; // число итераций с увеличением числа ячеек
-			lp = buf.idata[103];
+			ntm  = buf.idata[103];
+			lp = buf.idata[104];
 		}
 	}
 
@@ -178,360 +241,195 @@ int main(int argc, char *argv[])
 
 	t1 = MPI_Wtime();
 
-	My2DGrid(np,mp,n1,n2,&np1,&np2,&mp1,&mp2); // Распределение сетки между процессами
-	//
-	// mp = np1 * mp2 + mp1
-	//
-	if (mp1 ==     0) mp_l = -1; else mp_l = mp - 1;
-	if (mp1 == np1-1) mp_r = -1; else mp_r = mp + 1;
-	if (mp2 ==     0) mp_b = -1; else mp_b = mp - np1;
-	if (mp2 == np2-1) mp_t = -1; else mp_t = mp + np1;
-
-	// Создаём горизонтальтальные и вертикальные группы
-	//
-	// Base group:
-	//
-	MPI_Comm_group(MPI_COMM_WORLD,&gr0);
-	cm0 = MPI_COMM_WORLD;
-	//
-	// Horizontal group:
-	//
-	for (m=0; m<np1; m++) ranks[m] = np1 * mp2 + m;
-	MPI_Group_incl(gr0,np1,ranks,&gr1);
-	MPI_Comm_create(MPI_COMM_WORLD,gr1,&cm1);
-	//
-	// Vertical group:
-	//
-	for (m=0; m<np2; m++) ranks[m] = np1 * m + mp1;
-	MPI_Group_incl(gr0,np2,ranks,&gr2);
-	MPI_Comm_create(MPI_COMM_WORLD,gr2,&cm2); 
-
-	// Расчёты для максимального массива
-	// Вычисляем максимальные размеры массивов и аллокируем их
-	MyRange(np1,mp1,0,n1,&i11,&i12,&nc1); 
-	MyRange(np2,mp2,0,n2,&i21,&i22,&nc2); 
-	nc1m = (nc1-1)<<n; // Старший индекс в локальном массиве
-	nc2m = (nc2-1)<<n; // Старший индекс в локальном массиве
-	i11<<=n; // Младший индекс в глобальном массиве
-	i12<<=n; // Старший индекс в глобальном массиве
-	i21<<=n; // Младший индекс в глобальном массиве
-	i22<<=n; // Старший индекс в глобальном массиве
-	nc1=nc1m+1; // Размер локального массива
-	nc2=nc2m+1; // Размер локального массива
-	nc12 = nc1 * nc2; // Размер локального массива
-	nc12m = nc12-1; // Старший индекс в локальном массиве
-
-	ncp1 = 2*(np1-1); ncx1 = imax(nc1,ncp1);
-	ncp2 = 2*(np2-1); ncx2 = imax(nc2,ncp2);
-	ncp = imax(ncp1,ncp2); 
-	ncx = imax(ncx1,ncx2);
-	ncpx = imax(ncp,ncx);
-	nccp1 = 2*(nc1-1); 
-	nccp2 = 2*(nc2-1); 
-	nccp = imax(nccp1,nccp2);
-
-	xx = (double*)(malloc(round8bytes(sizeof(double)*nc1)));
-
-	yyy1 = (double**)(malloc(round8bytes(sizeof(double*)*(n+1)))); // предыдущее вычисления
-	for(j=0;j<=n;j++) yyy1[j] = (double*)(malloc(round8bytes(sizeof(double)*nc12))); // предыдущее вычисления
-
-	aa = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nccp2))));
-	bb = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nccp2))));
-	cc = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nccp2))));
-	ff = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nccp2))));
-
-	al = (double*)(malloc(round8bytes(sizeof(double)*imax(ncpx,nccp))));
-
-	dd = (double*)(malloc(round8bytes(sizeof(double)*4*nccp)));
-	ee = (double*)(malloc(round8bytes(sizeof(double)*4*nccp)));
-
-	yy1 = (double*)(malloc(round8bytes(sizeof(double)*nc12)));
-	yy2 = (double*)(malloc(round8bytes(sizeof(double)*nc12)));
-	yy3 = (double*)(malloc(round8bytes(sizeof(double)*nc12)));
-	yy4 = (double*)(malloc(round8bytes(sizeof(double)*4*nccp)));
-
-	al = (double*)(malloc(round8bytes(sizeof(double)*(ncpx,nccp))));
-	y0 = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nc2))));
-	y1 = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nc2))));
-	y2 = (double*)(malloc(round8bytes(sizeof(double)*imax(ncx,nccp))));
-	y3 = (double*)(malloc(round8bytes(sizeof(double)*imax(ncx,nccp))));
-	y4 = (double*)(malloc(round8bytes(sizeof(double)*9*ncp)));
-
-	aa0 = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nc2))));
-	bb0 = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nc2))));
-	cc0 = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nc2))));
-	ff0 = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nc2))));
-
-	aa1 = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nc2))));
-	bb1 = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nc2))));
-	cc1 = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nc2))));
-	ff1 = (double*)(malloc(round8bytes(sizeof(double)*imax(nc1,nc2))));
-
 	// Цикл с разными шагами сетки
 	for(it=0;it<=n;it++) {
-
-		MyRange(np1,mp1,0,n1,&i11,&i12,&nc1);
-		MyRange(np2,mp2,0,n2,&i21,&i22,&nc2);
-
-		nc1m = (nc1-1)<<it; // Старший индекс в локальном массиве
-		nc2m = (nc2-1)<<it; // Старший индекс в локальном массиве
-		i11<<=it; // Младший индекс в глобальном массиве
-		i12<<=it; // Старший индекс в глобальном массиве
-		i21<<=it; // Младший индекс в глобальном массиве
-		i22<<=it; // Старший индекс в глобальном массиве
-		nc1=nc1m+1; // Размер локального массива
-		nc2=nc2m+1; // Размер локального массива
-		nc12 = nc1 * nc2; // Размер локального массива
-		nc12m = nc12-1; // Старший индекс в локальном массиве
-
-		ncp1 = 2*(np1-1); ncx1 = imax(nc1,ncp1);
-		ncp2 = 2*(np2-1); ncx2 = imax(nc2,ncp2);
-		ncp = imax(ncp1,ncp2); ncx = imax(ncx1,ncx2);
-		ncpx = imax(ncp,ncx);
-
-		hx = (xb-xa)/(nx<<it); hx2 = hx * hx;
-
-		// Глобальная матрица систоит из решётки локальных матриц
-		// Глобальная строка образована последовательностью строк глобальной матрицы
-
-		/////////////////////////////////////////////////////////////////////////////
-		// Блок параллельных прогонок по строкам глобальной матрицы
-		for(i2=0;i2<nc2;i2++){
-
-			////////////////////////////////////////////////////////////////////////
-			// Инициализация массива значений аргумента
-			// сквозной нумерацией по строкам глобальной матрицы
-			for (i1=0; i1<nc1; i1++) {
-				xx[i1] = xa + hx * GIDX(i1,i2,i11,i21,n1,n2); // GIDX - индекс в глобальном массиве
-			}
-			////////////////////////////////////////////////////////////////////////
+		// Канонический вид задачи
+		// aa[i]y[i-1]-cc[i]y[i]+bb[i]y[i=1] = -ff[i]
 
 
-			////////////////////////////////////////////////////////////////////////////////
-			// Инициализация массива коэффициентов
-			// см. Семинар 7. Решение линейных пространственно одномерных краевых задач.
-			for (i1=0; i1<nc1; i1++) {
-				s0 = k(xx[i1]); 
-				s1 = k(xx[i1]-hx); 
-				s2 = k(xx[i1]+hx);
-				aa[i1] = 0.5 * (s0 + s1);
-				bb[i1] = 0.5 * (s0 + s2);
-				cc[i1] = hx2 * q(xx[i1]) + aa[i1] + bb[i1];
-				ff[i1] = hx2 * f(xx[i1]);
-			}
+		// Дополнительные условия
 
-			if (GIDX(0,i2,i11,i21,n1,n2)==GIDX(0,0,0,0,n1,n2)) { 
-				// Первый элемент глобальной строки
-				aa[0] = 0.0; 
-				bb[0] = 0.0; 
-				cc[0] = 1.0; 
-				ff[0] = ua;
-			}
+		// режим 1
+		// u'(xa) = pi*b*u(xa)
+		// u'(xb) = -pi*b*u(xb)
 
-			if (GIDX(nc1m,i2,i11,i21,n1,n2)==GIDX(n1,n2,0,0,n1,n2)) { 
-				// Последний элемент глобальной строки
-				aa[nc12m] = 0.0; 
-				bb[nc12m] = 0.0; 
-				cc[nc12m] = 1.0; 
-				ff[nc12m] = ub;
-			}
-			////////////////////////////////////////////////////////////////////////////
+		// режим 2
+		// u(xa) = u(xb)
+		// u'(xa) = u'(xb)
 
+		// (u,u')(xa) LR (u,u')(xb)
 
-			if (lp>0) for (i1=0; i1<nc1; i1++) {
-				fprintf(Fo,"i=%8d a=%12le b=%12le c=%12le f=%12le\n",
-					GIDX(i1,i2,i11,i21,n1,n2),
-					aa[i1],	bb[i1],	cc[i1], ff[i1]);
-			}
+		// необходтмое условие сходимости
+		// |LR|<=1
 
-			aa0[i2] = 0;
-			bb0[i2] = 0;
-			cc0[i2] = 0;
-			ff0[i2] = 0;
-			aa1[i2] = 0;
-			bb1[i2] = 0;
-			cc1[i2] = 0;
-			ff1[i2] = 0;
+		MyRange(np,mp,0,nx,&i1,&i2,&nc);
+		ncm = (nc-1)<<it; // Старший индекс в локальном массиве
+		i1<<=it; // Младший индекс в глобальном массиве
+		i2<<=it; // Старший индекс в глобальном массиве
+		nc = ncm+1; // Размер локального массива
+		ncp = 2*(np-1); 
+		ncx = imax(nc,ncp);
 
-			if(GIDX(0,i2,i11,i21,n1,n2)==GIDX(0,i2,0,0,n1,n2)){ 
-				// Сохраняем левый столбец глобальной матрицы
-				// и присваиваем единичный коэффициент
-				aa0[i2] = aa[0];
-				bb0[i2] = bb[0];
-				cc0[i2] = bb[0];
-				ff0[i2] = ff[0];
-				aa[0] = 0.0; 
-				bb[0] = 0.0; 
-				cc[0] = 1.0; 
-				ff[0] = 0.0;
-			}
+		hx = (xb-xa)/(nx<<it); 
+		hx2 = hx * hx;
+		ua = u(xa); 
+		ub = u(xb);
 
-			if(GIDX(nc1m,i2,i11,i21,n1,n2)==GIDX(n1,i2,0,0,n1,n2)){ 
-				// Сохраняем правый столбец глобальной матрицы
-				// и присваиваем единичный коэффициент
-				aa1[i2] = aa[nc1m];
-				bb1[i2] = bb[nc1m];
-				cc1[i2] = bb[nc1m];
-				ff1[i2] = ff[nc1m];
-				aa[nc1m] = 0.0; 
-				bb[nc1m] = 0.0; 
-				cc[nc1m] = 1.0; 
-				ff[nc1m] = 0.0;
-			}
+		fprintf(Fo,"i1=%d i2=%d nc=%d\n",i1,i2,nc);
 
-			// Выполняем паралельную прогонку по строке глобальной матрицы
-			// прогонки выполняются параллельно в строках решётки процессов
-			ier = prog_rightpn(np,mp,cm1,nc1,0,
-				aa, bb, cc, ff, al,
-				&yy1[LIDX(0,i2,nc1,nc2)], // решение алгоритма прогонки
-				y2, y3,	y4);
+		for (i=0; i<nc; i++)
+			xx[i] = xa + hx * (i1 + i);
 
-			if (ier!=0) mpierr("Bad solution 1",1);
-
-			for (i1=0; i1<nc1; i1++) ff[LIDX(i1,i2,nc1,nc2)] = 0.0; 
-
-			if(GIDX(0,i2,i11,i21,n1,n2)==GIDX(0,i2,0,0,n1,n2)) ff[0] = 0.0;
-			if(GIDX(nc1m,i2,i11,i21,n1,n2)==GIDX(n1,i2,0,0,n1,n2)) ff[nc1m] = 1.0;
-
-			if(GIDX(0,i2,i11,i21,n1,n2)>GIDX(n1,0,0,0,n1,n2)){ // Если не первая строка
-				// Выполняем паралельную прогонку по строке глобальной матрицы
-				// прогонки выполняются параллельно в строках решётки процессов
-				ier = prog_rightpn(np,mp,cm1,nc1,0,
-					aa, bb, cc, ff, al,
-					&yy2[LIDX(0,i2,nc1,nc2)], // решение алгоритма прогонки
-					y2, y3,	y4);
-				if (ier!=0) mpierr("Bad solution 2",2);
-			}
-
-			if(GIDX(0,i2,i11,i21,n1,n2)==GIDX(0,i2,0,0,n1,n2)) ff[0] = 1.0;
-			if(GIDX(nc1m,i2,i11,i21,n1,n2)==GIDX(n1,i2,0,0,n1,n2)) ff[nc1m] = 0.0;
-
-			if(GIDX(nc1m,i2,i11,i21,n1,n2)<GIDX(0,n2,0,0,n1,n2)){ // Если не последняя строка
-				// Выполняем паралельную прогонку по строке глобальной матрицы
-				// прогонки выполняются параллельно в строках решётки процессов
-				ier = prog_rightpn(np,mp,cm1,nc1,0,
-					aa, bb, cc, ff, al,
-					&yy3[LIDX(0,i2,nc1,nc2)], // решение алгоритма прогонки
-					y2, y3,	y4);
-				if (ier!=0) mpierr("Bad solution 3",3);
-			}			
-			ff[LIDX(0,i2,nc1,nc2)] = 0.0;
-			ff[LIDX(nc1m,i2,nc1,nc2)] = 0.0;
+		if (mp==0) {
+			s0 = k(xx[0]); s2 = k(xx[1]);
+			aa[0] = 0.0;
+			bb[0] = 0.5 * (s0 + s2);
+			cc[0] = 0.5 * hx2 * q(xx[0]) + bb[0];
 		}
-		// Конец блока параллельных прогонок по строкам глобальной матрицы
-		/////////////////////////////////////////////////////////////////////////////
-
-		for (i=0; i<8*nc2; i++) dd[i] = 0;
-		for (i=0; i<8*nc2; i++) ee[i] = 0;
-
-		////////////////////////////////////////////////////////////////////////
-		// Подсчёт суммы сохранённых коэффициентов
-		// и выполнение пересчёта в глобальной матрице
-		j=0;
-		for(i2=0;i2<nc2;i2++) {
-			if(GIDX(0,i2,i11,i21,n1,n2)==GIDX(0,0,0,0,n1,n2)) j+=4;
-			else {
-				cc0[i2] = cc0[i2] - bb0[i2] * yy3[LIDX(1,i2,nc1,nc2)];
-				ff0[i2] = ff0[i2] + bb0[i2] * yy1[LIDX(1,i2,nc1,nc2)];
-				bb0[i2] = 0.0;
-				dd[j++] = aa0[i2];
-				dd[j++] = bb0[i2];
-				dd[j++] = cc0[i2];
-				dd[j++] = ff0[i2];
-			}
-			if(GIDX(nc1m,i2,i11,i21,n1,n2)==GIDX(n1,i2,0,0,n1,n2)) j+=4;
-			else {
-				cc1[i2] = cc1[i2] - aa1[i2] * yy2[LIDX(nc1m-1,i2,nc1,nc2)];
-				ff1[i2] = ff1[i2] + aa1[i2] * yy1[LIDX(nc1m-1,i2,nc1,nc2)];
-				aa1[i2] = 0.0;
-				dd[j++] = aa1[i2];
-				dd[j++] = bb1[i2];
-				dd[j++] = cc1[i2];
-				dd[j++] = ff1[i2];
-			}
+		else {
+			s0 = k(xx[0]); s1 = k(xx[0]-hx); s2 = k(xx[0]+hx);
+			aa[0] = 0.5 * (s0 + s1);
+			bb[0] = 0.5 * (s0 + s2);
+			cc[0] = hx2 * q(xx[0]) + aa[0] + bb[0];
 		}
 
-		t2 = MPI_Wtime();
-		MPI_Allreduce(dd,ee,8*nc2,MPI_DOUBLE,MPI_SUM,cm1);
-		t2 = MPI_Wtime() - t2;
-
-		// ee содержат одинаковые данные в процессах по горизонтали
-		////////////////////////////////////////////////////////////////////////
-
-		////////////////////////////////////////////////////////////////////////
-		// параллельная прогонка по столбцам решётки процессов
-
-		j=0;
-		for(i2=0;i2<2*nc2;i2++) {
-			aa[i2] = ee[j++];   
-			bb[i2] = ee[j++];
-			cc[i2] = ee[j++]; 
-			ff[i2] = ee[j++];
+		for (i=1; i<ncm; i++) {
+			s0 = k(xx[i]); s1 = k(xx[i-1]); s2 = k(xx[i+1]);
+			aa[i] = 0.5 * (s0 + s1);
+			bb[i] = 0.5 * (s0 + s2);
+			cc[i] = hx2 * q(xx[i]) + aa[i] + bb[i];
 		}
 
-		// агоритмы прогонок параллельно обрабатывают одинаковые данные
-
-		j=0;
-		i=8*nc2;
-		if(GIDX(0,i2,i11,i21,n1,n2)==GIDX(0,0,0,0,n1,n2)) j+=4;
-		if(GIDX(nc1m,i2,i11,i21,n1,n2)==GIDX(n1,n2,0,0,n1,n2)) i-=4;
-
-		ier = prog_rightpn(np,mp,cm2,i-j,0,
-			&aa[j], &bb[j], &cc[j], &ff[j], &al[j],
-			&yy4[j], // решение алгоритма прогонки
-			y2, y3,	y4);
-		if (ier!=0) mpierr("Bad solution 4",4);
-
-		if(GIDX(0,i2,i11,i21,n1,n2)==GIDX(0,0,0,0,n1,n2)) yy4[0]=0;
-		if(GIDX(nc1m,i2,i11,i21,n1,n2)==GIDX(n1,n2,0,0,n1,n2)) yy4[2*nc2-1]=0;
-		// пересчёт результатов
-
-		for(i2=0;i2<nc2;i2++) {
-			a1 = yy4[2*i2]; 
-			b1 = yy4[2*i2+1];
-			for (i1=0; i1<nc1; i1++)
-				yy1[LIDX(i1,i2,nc1,nc2)] += a1 * yy3[LIDX(i1,i2,nc1,nc2)] + b1 * yy2[LIDX(i1,i2,nc1,nc2)];
+		if (mp==np-1) {
+			s0 = k(xx[ncm]); s1 = k(xx[ncm-1]);
+			aa[ncm] = 0.5 * (s0 + s1);
+			bb[ncm] = 0.0;
+			cc[ncm] = 0.5 * hx2 * q(xx[ncm]) + aa[ncm];
 		}
-		////////////////////////////////////////////////////////////////////////
-
-		t1 = MPI_Wtime() - t1;
-
-		s0 = 0.0;
-		for (i=0; i<nc; i++) {
-			s1 = u(xx[i]); 
-			s2 = dabs(s1-y1[i]); 
-			s0 = dmax(s0,s2);
-			if (lp>0)
-				fprintf(Fo,"i=%8d x=%12le y=%12le u=%12le d=%12le\n",
-				i,xx[i],y1[i],s1,s2);
+		else {
+			s0 = k(xx[ncm]); s1 = k(xx[ncm]-hx); s2 = k(xx[ncm]+hx);
+			aa[ncm] = 0.5 * (s0 + s1);
+			bb[ncm] = 0.5 * (s0 + s2);
+			cc[ncm] = hx2 * q(xx[ncm]) + aa[ncm] + bb[ncm];
 		}
 
-		if (np>1) {
-			s1 = s0; MPI_Allreduce(&s1,&s0,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
-		}
+		// (u[i],u'[i+1/2],u[i+1],u'[i+3/2],..
+		// h*u'[i+1/2] = -u[i] + u[i+1]
+		// u[i+1] = u[i]+u'[i+1/2]*h 
+
+		//	u[i-1]	hu'[i-1/2]	u[i]	hu'[i+1/2]	u[i+1]
+		//	-1		1			1
+		//	                    1		-1			-1
+
+		ntv = 0; gt = 1.0;
+
+		// Задаём начальное значение функции
+		for(i=0;i<ncm;i++) y1[i] = 0; 
+
+		do{
+			ntv++; 
+
+			if(mp==0) y0[0] = ua;
+			if(mp==np-1) y0[ncm] = ub;
+
+			for(m=0;m<2*np;m++){
+				// Повторяем цикл несколько раз, чтобы изменения дошли от левого края до правого и наоборот
+
+				for(i=0;i<ncm;i++){
+					y1[i  ] = y0[i+1] - y0[i  ]; // Прямые циклические вычисления
+				}
+
+				bsl[0] = y0[0  ];	bsl[1] = y1[0  ];
+				bsr[0] = y0[ncm];	bsr[1] = y1[ncm];
+
+				if(np>1) {
+					// Циклический обмен данными между процессами
+					CircleABndExch1D(np, mp, 2, 2, 2, 2, bsl, brl, bsr, brr);
+				}
+				else {
+					// Если процесс один, то просто копируем содержимое буферов
+					brr[0] = bsl[0];	brr[1] = bsl[1];
+					brl[0] = bsr[0];	brl[1] = bsr[1];
+				}
+
+				if(mp==0) {
+					// Для первого процесса накладываем дополнительные условия 
+					//на первый отсчёт
+					s1 = brl[0];
+					s2 = brl[1];
+					y0[0] = m11*s1 + pi*m12*s2*hx;
+				}
+				if(mp==np-1) {
+					// Для последнего процесса накладываем дополнительные условия 
+					// на последний отсчёт
+					s1 = brr[0];
+					s2 = brr[1];
+					y1[ncm] = m21*s1/pi/hx + m22*s2;
+				}
+
+				if(0<mp && mp<np-1) {
+					// Дообрабатываем то что не могли обработать из-за отсутствия данных
+					// и насинаем встречные вычмсления
+					y1[ncm] = brr[0] - y0[ncm];
+					y0[ncm] = brr[0] - y1[ncm];
+				}
+
+				for(j=ncm;j>0;i++,j--){
+					y0[j-1] = y0[j  ] - y1[j-1];	 // Встречные циклические вычисления		
+				}
+			}
+
+			for(i=0;i<ncx;i++){
+				s0 = y0[i];
+				s1 = (i==0)?brl[0]:y0[i-1];
+				s2 = (i==ncm)?brr[0]:y0[i+1];
+				y2[i]=(s2-s0)+(s1-s0);
+			}
+
+			for(i=0;i<nc;i++){
+				// Вычисляем значении для классической сжемы решения
+				ff[i]=q(xx[i])*y0[i]*hx2-k1(xx[i])*y1[i]*hx-k(xx[i])*y2[i];			
+			}
+
+			// Накладываем начальные ограничения
+			if(mp==0) ff[0] = ua;
+			if(mp==np-1) ff[ncm] = ub;
+
+			// Находим искомую функцию методом прогонки
+			if (np<2) ier = prog_right(nc,aa,bb,cc,ff,al,y1);
+			else      ier = prog_rightpm(np,mp,nc,0,aa,bb,cc,ff,al,y1,y2,y3,y4);
+
+			t1 = MPI_Wtime() - t1;
+
+			// Вычисляем отличие от реальной функции
+			gt = 0.0;
+			for (i=0; i<nc; i++) {
+				s1 = u(xx[i]); s2 = dabs(s1-y1[i]); gt = dmax(gt,s2);
+				if (lp>0)
+					fprintf(Fo,"i=%8d x=%12le y=%12le u=%12le gt=%12le\n",
+					i,xx[i],y1[i],s1,gt);
+			}
+
+			if (np>1) {
+				s1 = gt; 
+				MPI_Allreduce(&s1,&gt,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+			}
+
+			// повторяем если большое расхождение с текущим значением в качестве начального
+		} while ((ntv<ntm) && (gt>epst));
+
+		sprintf(sname,"%s_%02d_%02d.dat",vname,np,it);
+		OutFun1DP(sname,np,mp,nc,xx,y1);
 
 		if (mp==0) fprintf(stderr,"nx=%d t1=%le t2=%le dmax=%le\n",nx,t1,t2,s0);
 		fprintf(Fo,"t1=%le t2=%le dmax=%le\n",t1,t2,s0);
 
-		for(j=1;j<=it;j++){
-			s0=0.0;
-			for(i=0;i<=nc;i+=1<<j) 
-				s0=dmax(s0,dabs(y1[i]-yyy1[it-j][i>>j]));
-
-			MPI_Allreduce(&s0,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
-			if (mp == 0) {
-				fprintf(stderr,"Grid=%d nx=%d : nx=%d tv=%le s1=%le\n",
-					np,nx<<it,(nx<<it)>>j,tv,s1);
-				fflush(stderr);
-			}
-		}
-
 		// Сохраняем в предыдущее значение
-		for (i=0; i<nc; i++) yyy1[it][i] = y1[i];
+		for (i=0; i<nc; i++) yy1[it][i] = y1[i];
 
 		ii1=i1;
 		ii2=i2;
-		nnc=nc;
+		nnx=nx;
 	}
 	ier = fclose_m(&Fo);
 

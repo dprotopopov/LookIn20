@@ -127,7 +127,7 @@ int main(int argc, char *argv[])
 		fscanf(Fi,"tq=%le\n",&tq);
 		fscanf(Fi,"epst=%le\n",&epst);
 		fscanf(Fi,"nx=%d\n",&nx); //  начальное число €чеек сетки
-		fscanf(Fi,"dnx=%d\n",&dnx); // прирост числа €чеек сетки
+		//fscanf(Fi,"dnx=%d\n",&dnx); // прирост числа €чеек сетки
 		fscanf(Fi,"n=%d\n",&n); // число итераций с увеличением числа €чеек
 		fscanf(Fi,"ntp=%d\n",&ntp); // через сколько итераций выводить информацию
 		fscanf(Fi,"ntm=%d\n",&ntm); // максимальное количество итераций
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
 			buf.ddata[13] = tq;
 			buf.ddata[14] = epst;
 			buf.idata[100] = nx; // число €чеек сетки
-			buf.idata[101] = dnx; // прирост числа €чеек сетки
+			//buf.idata[101] = dnx; // прирост числа €чеек сетки
 			buf.idata[102] = n;
 			buf.idata[103] = ntp;
 			buf.idata[104] = ntm;
@@ -178,7 +178,7 @@ int main(int argc, char *argv[])
 			tq   = buf.ddata[13];
 			epst = buf.ddata[14];
 			nx   = buf.idata[100]; // число €чеек сетки
-			dnx  = buf.idata[101]; // прирост числа €чеек сетки
+			//dnx  = buf.idata[101]; // прирост числа €чеек сетки
 			n    = buf.idata[102]; // число итераций с увеличением числа €чеек
 			ntp  = buf.idata[103];
 			ntm  = buf.idata[104];
@@ -208,9 +208,6 @@ int main(int argc, char *argv[])
 	y0 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
 	y1 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
 
-	yy1 = (double**)(malloc(round8bytes(sizeof(double*)*(n+1)))); // предыдущее вычислени€
-	for(j=0;j<=n;j++) yy1[j] = (double*)(malloc(round8bytes(sizeof(double)*nc))); // предыдущее вычислени€
-
 	aa = (double*)(malloc(round8bytes(sizeof(double)*nc)));
 	bb = (double*)(malloc(round8bytes(sizeof(double)*nc)));
 	cc = (double*)(malloc(round8bytes(sizeof(double)*nc)));
@@ -228,6 +225,9 @@ int main(int argc, char *argv[])
 	bsl = (double*)(malloc(round8bytes(sizeof(double))));
 	brr = (double*)(malloc(round8bytes(sizeof(double))));
 	bsr = (double*)(malloc(round8bytes(sizeof(double))));
+
+	yy1 = (double**)(malloc(round8bytes(sizeof(double*)*(n+1)))); // предыдущее вычислени€
+	for(j=0;j<=n;j++) yy1[j] = (double*)(malloc(round8bytes(sizeof(double)*nc))); // предыдущее вычислени€
 
 	// ÷икл с разными шагами сетки
 	for(it=0;it<=n;it++) {
@@ -367,6 +367,11 @@ int main(int argc, char *argv[])
 				s2 = (id2<nc)?y1[id2]:brr[0];
 				ff[i] += tau*((s2-s0)-(s1-s0))/2/hx;
 			}
+
+			//if(ntv==100000) {
+			//	sprintf(sname,"%s_%02d_ntv.dat",vname,np);
+			//	OutFun1DP(sname,np,mp,nc,xx,ff);
+			//}
 
 			if (debug&0x04) { fprintf(Fo,"\t\tEnd add tau*(d/dx)(r(u)u)\n");fflush(Fo); }
 

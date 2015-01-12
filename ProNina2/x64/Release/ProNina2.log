@@ -1,0 +1,24 @@
+﻿Построение начато 12.01.2015 19:56:32.
+     1>Проект "D:\Projects\LookIn20\ProNina2\ProNina2.vcxproj" в узле 2 (целевые объекты Rebuild).
+     1>ClCompile:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\CL.exe /c /Zi /nologo /W1 /WX- /O2 /Gm- /EHsc /MD /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"x64\Release\\" /Fd"x64\Release\vc110.pdb" /Gd /TC /errorReport:prompt ProNina2.cpp mycom.c myio.c mynet.c myprog.c myrand.c
+         ProNina2.cpp
+         mycom.c
+         myio.c
+         mynet.c
+         myprog.c
+         myrand.c
+         Создание кода...
+       Link:
+         C:\Program Files (x86)\Microsoft Visual Studio 11.0\VC\bin\x86_amd64\link.exe /ERRORREPORT:PROMPT /OUT:"D:\Projects\LookIn20\x64\Release\ProNina2.exe" /NOLOGO /LIBPATH:"C:\Program Files\MPICH2\lib" mpi.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /PDB:"D:\Projects\LookIn20\x64\Release\ProNina2.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"D:\Projects\LookIn20\x64\Release\ProNina2.lib" /MACHINE:X64 x64\Release\ProNina2.obj
+         x64\Release\mycom.obj
+         x64\Release\myio.obj
+         x64\Release\mynet.obj
+         x64\Release\myprog.obj
+         x64\Release\myrand.obj
+         ProNina2.vcxproj -> D:\Projects\LookIn20\x64\Release\ProNina2.exe
+     1>Построение проекта "D:\Projects\LookIn20\ProNina2\ProNina2.vcxproj" завершено (целевые объекты Rebuild).
+
+Построение успешно завершено.
+
+Затраченное время: 00:00:01.66
