@@ -300,7 +300,7 @@ int main(int argc, char *argv[])
 			// = (1 + (dr/dx)(u) - tau/2) * y[j](i) 
 			//       + tau/hh*{k(y[j](i))k(y[j](i+1))/(k(y[j](i)))*(y[j](i+1)-y[j](i))
 			//              -k(y[j](i))k(y[j](i-1))/(k(y[j](i)))*(y[j](i)-y[j](i-1))} 
-			//       + tau*(r(y[j](i+1))*y[j](i+1)-r(y[j](i-1))*y[j](i-1))/4
+			//       - tau/4h*(r(y[j](i+1))*y[j](i+1)-r(y[j](i-1))*y[j](i-1))
 
 			for (i=0; i<nc; i++) {
 				ii = i1 + i;
@@ -330,7 +330,7 @@ int main(int argc, char *argv[])
 				s1 = (id1>=0)?y0[id1]:brl[0]; 
 				s2 = (id2<nc)?y0[id2]:brr[0];
 				ff[i] = (1.0 + r1(s0) - tau/2 - aa[i] - bb[i])*s0 - aa[i]*s1 - bb[i]*s2 
-					+ tau*(r(s2)*s2-r(s1)*s1)/4;
+					- tau*(r(s2)*s2-r(s1)*s1)/4/hx;
 			}
 
 			// Задание ведущего элемента
