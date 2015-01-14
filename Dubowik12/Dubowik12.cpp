@@ -3,7 +3,19 @@
 //
 //  du/dt = (d/dx)(k(u)du/dx - r(u)u) - u, xa < x < xb, t>0
 //  du/dt = (d/dx)(k(u)du/dx) - (d/dx)(r(u)u) - u, xa < x < xb, t>0
-//
+//  du/dt = (d/dx)(k(u)du/dx) - (d/dx)(r(u))u - r(u)(du/dx) - u, xa < x < xb, t>0
+//  du/dt = (d/dx)(k(u)du/dx) - (1 + (d/dx)(r(u)))u - r(u)(du/dx) , xa < x < xb, t>0
+
+//   (1 + (dr/dx)(u) + tau/2) * y[j+1](i) 
+//       - tau/hh*{k(y[j](i))k(y[j](i+1))/(k(y[j](i)))*(y[j+1](i+1)-y[j+1](i))
+//              -k(y[j](i))k(y[j](i-1))/(k(y[j](i)))*(y[j+1](i)-y[j+1](i-1))} 
+// = (1 + (dr/dx)(u) - tau/2) * y[j](i) 
+//       + tau/hh*{k(y[j](i))k(y[j](i+1))/(k(y[j](i)))*(y[j](i+1)-y[j](i))
+//              -k(y[j](i))k(y[j](i-1))/(k(y[j](i)))*(y[j](i)-y[j](i-1))} 
+//       + tau*(r(y[j](i+1))*y[j](i+1)-r(y[j](i-1))*y[j](i-1))/2
+
+
+
 //  u(x,0) = g0(x), u(xa,t) = g1(t), u(xb,t) = g2(t) 
 //
 //
@@ -35,10 +47,10 @@ static double tick, t1, t2, t3;
 static FILE *Fi = NULL;
 static FILE *Fo = NULL;
 
-static int nx, dnx, n, ntp, ntm, ntv;
+static int nx, n, ntp, ntm, ntv;
 static double xa, xb, r0, q0, u0, u1, a, b;
-static double k1, k2, tau0, tau1, tmax, tq, epst;
-static double tv, u10, omg0, omg1, gt;
+static double tau0, tau1, tmax, tq, epst;
+static double tv, u10, omg1, gt;
 
 double k(double u);
 double k(double u) {
@@ -49,6 +61,13 @@ double r(double u);
 double r(double u) {
 	double s=dsin(u);
 	return u1+b*s*s;
+}
+
+double r1(double u);
+double r1(double u) {
+	double s=dsin(u);
+	double c=dcos(u);
+	return 2.0*b*s*c;
 }
 
 double g0(double x);
@@ -75,25 +94,12 @@ size_t round8bytes(size_t size){
 	return q;
 }
 
-// наибольший общий делитель
-int gcd(int n1, int n2);
-int gcd(int n1, int n2){
-	int x=imax(n1,n2);
-	int y=imin(n1,n2);
-	while(y!=0){
-		int r=x%y;
-		x=y;
-		y=r;
-	}
-	return x;
-}
-
 int main(int argc, char *argv[])
 {
 	int i, j, ii, i1, i2, nc, ncm, ncp, ncx;
 	double hx, hx2, tau, gam, s0, s1, s2, s3;
 	double *xx, *aa, *bb, *cc, *ff, *y0, *y1, *y2, *y3, *y4, *al;
-	int id1, id2, it, gcdx;
+	int id1, id2, it;
 	double *bsl, *brl, *bsr, *brr; // Ѕуферы дл€ обмена с сосед€ми
 	double **yy1; // предыдущее вычислени€
 	int ii1, ii2, nnc; // предыдущее вычислени€
@@ -117,27 +123,23 @@ int main(int argc, char *argv[])
 		fscanf(Fi,"xb=%le\n",&xb);
 		fscanf(Fi,"a=%le\n",&a);
 		fscanf(Fi,"b=%le\n",&b);
-		fscanf(Fi,"omg0=%le\n",&omg0);
 		fscanf(Fi,"omg1=%le\n",&omg1);
 		fscanf(Fi,"u0=%le\n",&u0);
 		fscanf(Fi,"u1=%le\n",&u1);
-		fscanf(Fi,"k1=%le\n",&k1);
-		fscanf(Fi,"k2=%le\n",&k2);
 		fscanf(Fi,"tmax=%le\n",&tmax);
 		fscanf(Fi,"tq=%le\n",&tq);
+		fscanf(Fi,"tau=%le\n",&tau);
 		fscanf(Fi,"epst=%le\n",&epst);
 		fscanf(Fi,"nx=%d\n",&nx); //  начальное число €чеек сетки
-		//fscanf(Fi,"dnx=%d\n",&dnx); // прирост числа €чеек сетки
 		fscanf(Fi,"n=%d\n",&n); // число итераций с увеличением числа €чеек
 		fscanf(Fi,"ntp=%d\n",&ntp); // через сколько итераций выводить информацию
 		fscanf(Fi,"ntm=%d\n",&ntm); // максимальное количество итераций
 		fscanf(Fi,"lp=%d\n",&lp);
 		fclose_m(&Fi);
 		if (argc>1) sscanf(argv[1],"%d",&nx); // число €чеек сетки
-		if (argc>2) sscanf(argv[2],"%d",&dnx); // прирост числа €чеек сетки
-		if (argc>3) sscanf(argv[3],"%d",&n); // число итераций с увеличением числа €чеек
-		if (argc>4) sscanf(argv[4],"%d",&ntp); // через сколько итераций выводить информацию
-		if (argc>5) sscanf(argv[5],"%d",&ntm); // максимальное количество итераций
+		if (argc>2) sscanf(argv[2],"%d",&n); // число итераций с увеличением числа €чеек
+		if (argc>3) sscanf(argv[3],"%d",&ntp); // через сколько итераций выводить информацию
+		if (argc>4) sscanf(argv[4],"%d",&ntm); // максимальное количество итераций
 	}
 
 	if (np>1) {
@@ -146,17 +148,14 @@ int main(int argc, char *argv[])
 			buf.ddata[1]  = xb;
 			buf.ddata[2]  = a;
 			buf.ddata[3]  = b;
-			buf.ddata[4]  = omg0;
 			buf.ddata[5]  = omg1;
 			buf.ddata[6]  = u0;
 			buf.ddata[7]  = u1;
-			buf.ddata[8]  = k1;
-			buf.ddata[9]  = k2;
 			buf.ddata[12] = tmax;
 			buf.ddata[13] = tq;
-			buf.ddata[14] = epst;
+			buf.ddata[14] = tau;
+			buf.ddata[15] = epst;
 			buf.idata[100] = nx; // число €чеек сетки
-			//buf.idata[101] = dnx; // прирост числа €чеек сетки
 			buf.idata[102] = n;
 			buf.idata[103] = ntp;
 			buf.idata[104] = ntm;
@@ -168,17 +167,14 @@ int main(int argc, char *argv[])
 			xb   = buf.ddata[1];
 			a   = buf.ddata[2];
 			b   = buf.ddata[3];
-			omg0   = buf.ddata[4];
 			omg1   = buf.ddata[5];
 			u0   = buf.ddata[6];
 			u1   = buf.ddata[7];
-			k1   = buf.ddata[8];
-			k2   = buf.ddata[9];
 			tmax = buf.ddata[12];
 			tq   = buf.ddata[13];
-			epst = buf.ddata[14];
+			tau  = buf.ddata[14];
+			epst = buf.ddata[15];
 			nx   = buf.idata[100]; // число €чеек сетки
-			//dnx  = buf.idata[101]; // прирост числа €чеек сетки
 			n    = buf.idata[102]; // число итераций с увеличением числа €чеек
 			ntp  = buf.idata[103];
 			ntm  = buf.idata[104];
@@ -189,8 +185,8 @@ int main(int argc, char *argv[])
 	fprintf(Fo,"Netsize: %d, process: %d, system: %s, tick=%12le\n",
 		np,mp,pname,tick);
 
-	fprintf(Fo,"xa=%le xb=%le a=%le b=%le omg0=%le omg1=%le\n",xa,xb,a,b,omg0,omg1);
-	fprintf(Fo,"u0=%le u1=%le k1=%le k2=%le\n",u0,u1,k1,k2);
+	fprintf(Fo,"xa=%le xb=%le a=%le b=%le omg1=%le\n",xa,xb,a,b,omg1);
+	fprintf(Fo,"u0=%le u1=%le\n",u0,u1);
 	fprintf(Fo,"tmax=%le tq=%le epst=%le\n",tmax,tq,epst);
 	fprintf(Fo,"nx=%d ntp=%d ntm=%d lp=%d\n",nx,ntp,ntm,lp);
 
@@ -233,12 +229,10 @@ int main(int argc, char *argv[])
 	for(it=0;it<=n;it++) {
 		// k1 k3 q0 вз€ты из конспекта семинара. 
 		// здесь они используютс€ дл€ рассчЄта сходимости
-		u10 = u1 - u0; /*omg0 = 1.0 / tau0; omg1 = 1.0 / tau1;*/
+		u10 = u1 - u0; 
 		hx = (xb-xa)/(nx<<it); hx2 = hx * hx;
-		tau = tmax/ntm;
-		tau = dmin(tau,0.5 * hx2 / dmax(k1,k2));
-		tau = dmin(tau,0.5 * hx / sqrt(dmax(k1,k2)));
-		s0 = dmin(tmax/tau,1000000000.0); ntm = imax(ntm,(int)s0);
+		tau = dmin(tau,tmax/ntm);
+		s0 = dmin(tmax/tau,100000.0); ntm = imax(ntm,(int)s0);
 
 		MyRange(np,mp,0,nx,&i1,&i2,&nc);
 		ncm = (nc-1)<<it; // —тарший индекс в локальном массиве
@@ -248,9 +242,9 @@ int main(int argc, char *argv[])
 		ncp = 2*(np-1); 
 		ncx = imax(nc,ncp);
 
-		fprintf(Fo,"u10=%le omg0=%le omg1=%le\n",u10,omg0,omg1);
+		fprintf(Fo,"u10=%le omg1=%le\n",u10,omg1);
 		fprintf(Fo,"hx=%le tau=%le ntm=%d\n",hx,tau,ntm);
-		fprintf(Fo,"nx=%d hx=%le tau=%le ntm=%d\n",nx+it*dnx,hx,tau,ntm);
+		fprintf(Fo,"nx=%d hx=%le tau=%le ntm=%d\n",nx<<it,hx,tau,ntm);
 
 		fprintf(Fo,"i1=%d i2=%d nc=%d\n",i1,i2,nc);
 
@@ -266,6 +260,7 @@ int main(int argc, char *argv[])
 
 		do {
 			ntv++; 
+			if (debug&0x01) { fprintf(Fo,"ntv=%d\n",ntv);fflush(Fo); }
 			tv += tau;
 			if (debug&0x01) { fprintf(Fo,"tv=%le\n",tv);fflush(Fo); }
 
@@ -280,15 +275,6 @@ int main(int argc, char *argv[])
 				else if (ii==nx) y0[i] = g2(tv);
 				else             y0[i] = y1[i];
 			}
-
-			// ћодифицированна€ формула из семинара 9
-			// (1+tau/2)*y[j+1](i) 
-			//       - tau/hh*{k(y[j](i))k(y[j](i+1))/(k(y[j](i))+k(y[j](i+1)))*(y[j+1](i+1)-y[j+1](i))
-			//              -k(y[j](i))k(y[j](i-1))/(k(y[j](i))+k(y[j](i-1)))*(y[j+1](i)-y[j+1](i-1))} 
-			// = (1-tau/2)*y[j](i) 
-			//       + tau/hh*{k(y[j](i))k(y[j](i+1))/(k(y[j](i))+k(y[j](i+1)))*(y[j](i+1)-y[j](i))
-			//              -k(y[j](i))k(y[j](i-1))/(k(y[j](i))+k(y[j](i-1)))*(y[j](i)-y[j](i-1))} 
-			//       + tau*(d/dx)(r(u)u)
 
 			// –ассчитываем коэффициенты левой/правой части
 			// на основе текущих значений u
@@ -307,6 +293,15 @@ int main(int argc, char *argv[])
 				if (debug&0x02) { fprintf(Fo,"\t\tEnd BndExch1D\n");fflush(Fo); }
 			}
 
+			// ћодифицированна€ формула из семинара 9
+			//   (1 + (dr/dx)(u) + tau/2) * y[j+1](i) 
+			//       - tau/hh*{k(y[j](i))k(y[j](i+1))/(k(y[j](i)))*(y[j+1](i+1)-y[j+1](i))
+			//              -k(y[j](i))k(y[j](i-1))/(k(y[j](i)))*(y[j+1](i)-y[j+1](i-1))} 
+			// = (1 + (dr/dx)(u) - tau/2) * y[j](i) 
+			//       + tau/hh*{k(y[j](i))k(y[j](i+1))/(k(y[j](i)))*(y[j](i+1)-y[j](i))
+			//              -k(y[j](i))k(y[j](i-1))/(k(y[j](i)))*(y[j](i)-y[j](i-1))} 
+			//       + tau*(r(y[j](i+1))*y[j](i+1)-r(y[j](i-1))*y[j](i-1))/4
+
 			for (i=0; i<nc; i++) {
 				ii = i1 + i;
 				id1 = i-1;
@@ -317,12 +312,9 @@ int main(int argc, char *argv[])
 				s0 = y0[i]; 
 				s1 = (id1>=0)?y0[id1]:brl[0]; 
 				s2 = (id1<=ncm)?y0[id2]:brr[0];
-				s0 = k(s0);
-				s1 = k(s1);
-				s2 = k(s2);
-				aa[i] = gam * s0 * s1 / (s0 + s1);
-				bb[i] = gam * s0 * s2 / (s0 + s2);
-				cc[i] = 1.0 + tau/2 + aa[i] + bb[i];
+				aa[i] = gam * (k(s0) * k(s1) / (k(s0) + k(s1)));
+				bb[i] = gam * (k(s0) * k(s2) / (k(s0) + k(s2)));
+				cc[i] = 1.0 + r1(s0) + tau/2 + aa[i] + bb[i];
 			}
 
 			if (debug&0x04) { fprintf(Fo,"\t\tEnd calc aa bb cc\n");fflush(Fo); }
@@ -337,43 +329,9 @@ int main(int argc, char *argv[])
 				s0 = y0[i]; 
 				s1 = (id1>=0)?y0[id1]:brl[0]; 
 				s2 = (id2<nc)?y0[id2]:brr[0];
-				ff[i] = (1.0 - tau/2 - aa[i] - bb[i])*s0 - aa[i]*s1 - bb[i]*s2;
+				ff[i] = (1.0 + r1(s0) - tau/2 - aa[i] - bb[i])*s0 - aa[i]*s1 - bb[i]*s2 
+					+ tau*(r(s2)*s2-r(s1)*s1)/4;
 			}
-
-			// ¬ычисл€ем tau*(d/dx)(r(u)u) и прибавл€ем к правой части уравнени€ не€вной схемы
-			if (debug&0x04) { fprintf(Fo,"Begin add tau*(d/dx)(r(u)u)\n");fflush(Fo); }
-
-			for (i=0; i<nc; i++) y1[i]=r(y0[i])*y0[i];
-
-			bsl[0] = y1[0];
-			bsr[0] = y1[ncm];
-			brl[0] = y1[0];
-			brr[0] = y1[ncm];
-
-			if(np>1){
-				// ќбмениваемс€ копи€ми крайних €чеек фрагмента матрицы с сосед€ми
-				if (debug&0x02) { fprintf(Fo,"Begin BndExch1D\n");fflush(Fo); }
-				BndExch1D(np, mp, 1, 1, 1, 1,
-					bsl, brl, bsr, brr);
-				if (debug&0x02) { fprintf(Fo,"\t\tEnd BndExch1D\n");fflush(Fo); }
-			}
-
-			for (i=0; i<nc; i++) {
-				ii = i1 + i;
-				id1 = i-1;
-				id2 = i+1;
-				s0 = y1[i]; 
-				s1 = (id1>=0)?y1[id1]:brl[0]; 
-				s2 = (id2<nc)?y1[id2]:brr[0];
-				ff[i] += tau*((s2-s0)-(s1-s0))/2/hx;
-			}
-
-			//if(ntv==100000) {
-			//	sprintf(sname,"%s_%02d_ntv.dat",vname,np);
-			//	OutFun1DP(sname,np,mp,nc,xx,ff);
-			//}
-
-			if (debug&0x04) { fprintf(Fo,"\t\tEnd add tau*(d/dx)(r(u)u)\n");fflush(Fo); }
 
 			// «адание ведущего элемента
 			// ѕоскольку задали два ведущих элемента, то система может быть несовместна
@@ -395,11 +353,25 @@ int main(int argc, char *argv[])
 
 			if (debug&0x04) { fprintf(Fo,"\t\tEnd restore\n");fflush(Fo); }
 			if (debug&0x08) { fprintf(Fo,"\t\tEnd algo\n");fflush(Fo); }
+
+			sprintf(sname,"%s_%02d_y0.dat",vname,np);
+			OutFun1DP(sname,np,mp,nc,xx,y0);
+			sprintf(sname,"%s_%02d_y1.dat",vname,np);
+			OutFun1DP(sname,np,mp,nc,xx,y1);
+			sprintf(sname,"%s_%02d_aa.dat",vname,np);
+			OutFun1DP(sname,np,mp,nc,xx,aa);
+			sprintf(sname,"%s_%02d_bb.dat",vname,np);
+			OutFun1DP(sname,np,mp,nc,xx,bb);
+			sprintf(sname,"%s_%02d_cc.dat",vname,np);
+			OutFun1DP(sname,np,mp,nc,xx,bb);
+			sprintf(sname,"%s_%02d_ff.dat",vname,np);
+			OutFun1DP(sname,np,mp,nc,xx,ff);
+
 			//  ќЌ≈÷ јЋ√ќ–»“ћј Ўј√ј
 
-			// if (ier!=0) mpierr("Bad solution",1);
+			if (ier!=0) mpierr("Bad solution",1);
 
-			if (ntv % ntp == 0) {
+			if((ntv<ntp)||((ntv%ntp)==0)) {
 				gt = 0.0;
 				for (i=0; i<nc; i++) {
 					s0 = y1[i]-y0[i]; 
@@ -417,13 +389,12 @@ int main(int argc, char *argv[])
 					fprintf(stderr,"ntv=%d tv=%le tau=%le gt=%le tcpu=%le\n",ntv,tv,tau,gt,t2);
 				}
 			}
-
-			if (lp>0) {
-				fprintf(Fo,"ntv=%d tv=%le gt=%le\n",ntv,tv,gt);
-				for (i=0; i<nc; i++)
-					fprintf(Fo,"i=%8d x=%12le y1=%12le\n",(i1+i),xx[i],y1[i]);
-				fflush(Fo); 
-			}
+			//if (lp>0) {
+			//	fprintf(Fo,"ntv=%d tv=%le gt=%le\n",ntv,tv,gt);
+			//	for (i=0; i<nc; i++)
+			//		fprintf(Fo,"i=%8d x=%12le y1=%12le\n",(i1+i),xx[i],y1[i]);
+			//	fflush(Fo); 
+			//}
 
 		} while ((ntv<ntm) && (gt>epst));
 
@@ -440,7 +411,8 @@ int main(int argc, char *argv[])
 			for(i=0;i<=nc;i+=1<<j) 
 				s0=dmax(s0,dabs(y1[i]-yy1[it-j][i>>j]));
 
-			MPI_Allreduce(&s0,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+			s1=s0;
+			if(np>1) MPI_Allreduce(&s0,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 			if (mp == 0) {
 				fprintf(stderr,"Grid=%d nx=%d : nx=%d tv=%le s1=%le\n",
 					np,nx<<it,(nx<<it)>>j,tv,s1);
