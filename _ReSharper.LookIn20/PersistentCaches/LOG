@@ -1,5 +1,5 @@
-2015/01/12-12:14:33.597 1db8 Recovering log #76
-2015/01/12-12:14:33.597 1db8 Level-0 table #79: started
-2015/01/12-12:14:33.597 1db8 Level-0 table #79: 0 bytes OK
-2015/01/12-12:14:33.689 1db8 Delete type=0 #76
-2015/01/12-12:14:33.689 1db8 Delete type=3 #74
+2015/01/13-07:43:55.721 28ac Recovering log #80
+2015/01/13-07:43:55.721 28ac Level-0 table #82: started
+2015/01/13-07:43:55.759 28ac Level-0 table #82: 5939 bytes OK
+2015/01/13-07:43:55.837 28ac Delete type=0 #80
+2015/01/13-07:43:55.837 28ac Delete type=3 #78

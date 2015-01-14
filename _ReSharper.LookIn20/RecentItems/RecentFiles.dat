@@ -6,7 +6,6 @@
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:mynet.h" caret="244" fromTop="11" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myio.c" caret="1809" fromTop="9" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myprog.h" caret="0" fromTop="0" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myprog.c" caret="0" fromTop="0" />
     <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:mynet.h" caret="246" fromTop="8" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:mynet.c" caret="564" fromTop="14" />
     <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:mynet.c" caret="160" fromTop="9" />
@@ -17,47 +16,48 @@
     <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:myio.c" caret="0" fromTop="0" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:mycom.c" caret="1179" fromTop="19" />
     <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.d" caret="126" fromTop="16" />
-    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="28701" fromTop="18" />
     <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:myio.h" caret="0" fromTop="0" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:mycom.c" caret="0" fromTop="0" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:myprog.c" caret="7435" fromTop="14" />
     <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:mynet.c" caret="1882" fromTop="5" />
     <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.d" caret="156" fromTop="18" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="6937" fromTop="12" />
     <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ReadMe.txt" caret="0" fromTop="0" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.d" caret="117" fromTop="14" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="11361" fromTop="18" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:mycom.c" caret="883" fromTop="14" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:myprog.c" caret="2039" fromTop="14" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:myprog.c" caret="351" fromTop="12" />
+    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="6293" fromTop="9" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.d" caret="34" fromTop="4" />
+    <File id="6A63A12F-BBE8-487A-8E3E-EA63C045A772/f:LookIn20.cpp" caret="23825" fromTop="16" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="12878" fromTop="15" />
   </RecentFiles>
   <RecentEdits>
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="588" fromTop="15" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="11195" fromTop="20" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="295" fromTop="15" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.d" caret="84" fromTop="12" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.d" caret="38" fromTop="5" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="6090" fromTop="14" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="5621" fromTop="10" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="4974" fromTop="14" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="8606" fromTop="10" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="10868" fromTop="15" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="3247" fromTop="16" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="4349" fromTop="18" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="4963" fromTop="22" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="7226" fromTop="14" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="9192" fromTop="16" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="9389" fromTop="8" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="9589" fromTop="15" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="9818" fromTop="14" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="10463" fromTop="13" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="10666" fromTop="10" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="11066" fromTop="12" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="8585" fromTop="7" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="2668" fromTop="16" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="1708" fromTop="10" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="3284" fromTop="12" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="5988" fromTop="6" />
-    <File id="1E2CB499-1581-4512-B3A1-15F745DD9BA5/f:Dubowik12.cpp" caret="6937" fromTop="12" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="4519" fromTop="18" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="3074" fromTop="14" />
-    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="0" fromTop="0" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="13010" fromTop="14" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="11555" fromTop="15" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="13982" fromTop="21" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="3952" fromTop="16" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="12685" fromTop="14" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="12748" fromTop="14" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="12563" fromTop="9" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="12685" fromTop="24" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="11774" fromTop="9" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="1233" fromTop="18" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="1357" fromTop="25" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="1486" fromTop="23" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="1077" fromTop="15" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.d" caret="34" fromTop="4" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="12748" fromTop="34" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="12182" fromTop="18" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="12003" fromTop="11" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="9268" fromTop="18" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="9534" fromTop="9" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="3794" fromTop="15" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="13474" fromTop="10" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="11582" fromTop="14" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="11735" fromTop="15" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="9873" fromTop="12" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="10000" fromTop="19" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="10194" fromTop="21" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="10407" fromTop="21" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="10575" fromTop="20" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="10785" fromTop="19" />
+    <File id="33B15635-6A85-431D-A530-3F54EC3206C3/f:ProNina2.cpp" caret="12829" fromTop="14" />
   </RecentEdits>
 </RecentFiles>
