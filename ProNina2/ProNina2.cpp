@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
 			s2 = kk[1];
 			aa[0] = 0.0;
 			bb[0] = gam * 2.0 * s0 * s2 / (s0 + s2);
-			cc[0] = qq[0] + tau + bb[0];
+			cc[0] = qq[0] + bb[0];
 		}
 		else {
 			s0 = kk[0]; 
@@ -337,7 +337,7 @@ int main(int argc, char *argv[])
 			s2 = k(xx[0]+hx);
 			aa[0] = gam * 2.0 * s0 * s1 / (s0 + s1);
 			bb[0] = gam * 2.0 * s0 * s2 / (s0 + s2);
-			cc[0] = qq[0] + tau + aa[0] + bb[0];
+			cc[0] = qq[0] + aa[0] + bb[0];
 		}
 
 		for (i=1; i<ncm; i++) {
@@ -346,7 +346,7 @@ int main(int argc, char *argv[])
 			s2 = kk[i+1];
 			aa[i] = gam * 2.0 * s0 * s1 / (s0 + s1);
 			bb[i] = gam * 2.0 * s0 * s2 / (s0 + s2);
-			cc[i] = qq[i] + tau + aa[i] + bb[i];
+			cc[i] = qq[i] + aa[i] + bb[i];
 		}
 
 		if (mp==np-1) {
@@ -354,7 +354,7 @@ int main(int argc, char *argv[])
 			s1 = kk[ncm-1];
 			aa[ncm] = gam * 2.0 * s0 * s1 / (s0 + s1);
 			bb[ncm] = 0.0;
-			cc[ncm] = qq[ncm] + tau + aa[ncm];
+			cc[ncm] = qq[ncm] + aa[ncm];
 		}
 		else {
 			s0 = kk[ncm]; 
@@ -362,7 +362,7 @@ int main(int argc, char *argv[])
 			s2 = k(xx[ncm]+hx);
 			aa[ncm] = gam * 2.0 * s0 * s1 / (s0 + s1);
 			bb[ncm] = gam * 2.0 * s0 * s2 / (s0 + s2);
-			cc[ncm] = qq[ncm] + tau + aa[ncm] + bb[ncm];
+			cc[ncm] = qq[ncm] + aa[ncm] + bb[ncm];
 		}
 
 		sprintf(sname,"%s_%02d_kk.dat",vname,np);
@@ -385,9 +385,11 @@ int main(int argc, char *argv[])
 		// Задаём начальное значение функции
 		// В качестве начального выбираем ненулевой вектор
 		// поскольку ноль переходит в ноль
-		for(i=0;i<nc+1;i++) y0[i] = 1; 
-		for(i=0;i<nc+1;i++) y1[i] = 0; 
-		for(i=0;i<nc+1;i++) y2[i] = 0; 
+		//for(i=0;i<=nc;i++) y0[i] = 1; 
+		for(i=0;i<=nc;i++) y1[i] = 0; 
+		for(i=0;i<=nc;i++) y2[i] = 0; 
+		for(i=0;i<=nc;i++) y1[i] = (y0[i+1]-y0[i])/hx;
+		for(i=0;i<=nc;i++) y2[i] = (y1[i+1]-y1[i])/hx;
 
 		// Вычисления являются циклическими поскольку
 		// результаты каждого процесса поступают на вход соседних процессов
