@@ -318,9 +318,9 @@ int main(int argc, char *argv[])
 		gt = s1; MPI_Allreduce(&gt,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 		gt = s2; MPI_Allreduce(&gt,&s2,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 
-		tau = dmin(tau,0.25*hx/s0);
-		tau = dmin(tau,0.25*hx/s1);
-		tau = dmin(tau,0.5*hx/s2);
+		//tau = dmin(tau,0.25*hx/s0);
+		//tau = dmin(tau,0.25*hx/s1);
+		//tau = dmin(tau,0.5*hx/s2);
 
 		gam = tau/hx2;
 
@@ -465,7 +465,7 @@ int main(int argc, char *argv[])
 				//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
 				//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
 				//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
-				for(i=0;i<nc;i++) ff[i] = (1+tau)*qq[i]*y0[i] - tau*(kk1[i]*y1[i] + kk[i]*y2[i]);
+				for(i=0;i<nc;i++) ff[i] = qq[i]*y0[i] - tau*(kk1[i]*y1[i] + kk[i]*y2[i]);
 
 				// Хотя бы одна точка должна быть зафиксирована
 				// поскольку оператор линейный, то есть умноженное на константу решение 

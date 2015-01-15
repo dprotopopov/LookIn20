@@ -314,9 +314,9 @@ int main(int argc, char *argv[])
 		gt = s1; MPI_Allreduce(&gt,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 		gt = s2; MPI_Allreduce(&gt,&s2,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 
-		tau = dmin(tau,0.25*hx/s0);
-		tau = dmin(tau,0.25*hx/s1);
-		tau = dmin(tau,0.5*hx/s2);
+		//tau = dmin(tau,0.25*hx/s0);
+		//tau = dmin(tau,0.25*hx/s1);
+		//tau = dmin(tau,0.5*hx/s2);
 
 		gam = tau/hx2;
 
