@@ -20,4 +20,5 @@
   <Module PersistentId="System.Security, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, mvid=c254b27b-b22b-4eac-ba8a-9c43f9d04499" ModuleId="System.Security_1" />
   <Module PersistentId="System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089, mvid=1f78b6d9-62c1-46d3-8674-ee21e6e790df" ModuleId="System.Numerics_1" />
   <Module PersistentId="33B15635-6A85-431D-A530-3F54EC3206C3" ModuleId="ProNina2" />
+  <Module PersistentId="CF753FE3-353B-4678-9BFD-37026010CF8F" ModuleId="Kolobylina1" />
 </Modules>

@@ -1,6 +1,6 @@
-//  Boundary problem:
 //
 //  (k(x)u')' - q(x) u = - f(x), xa < x < xb
+//  f = -k'u' -ku'' +qu
 //
 //  u'(xa) = ua, u'(xb) = ub
 //
@@ -24,8 +24,7 @@ static char sname[48];
 static MPI_Status status;
 static union_t buf;
 static double tick, t1, t2, t3, gt, epst;
-//static double m11, m12, m21, m22;
-static int n, ntp, ntm, ntv, mode;
+static int n, ntp, ntm, ntv;
 
 static FILE *Fi = NULL;
 static FILE *Fo = NULL;
@@ -162,21 +161,18 @@ int main(int argc, char *argv[])
 		i = fscanf(Fi,"x0=%le\n",&x0);
 		i = fscanf(Fi,"a=%le\n",&a);
 		i = fscanf(Fi,"b=%le\n",&b);
-		//i = fscanf(Fi,"ua=%le\n",&ua);
-		//i = fscanf(Fi,"ub=%le\n",&ub);
-		//i = fscanf(Fi,"m11=%le\n",&m11);
-		//i = fscanf(Fi,"m12=%le\n",&m12);
-		//i = fscanf(Fi,"m21=%le\n",&m21);
-		//i = fscanf(Fi,"m22=%le\n",&m22);
-		i = fscanf(Fi,"mode=%d\n",&mode);
 		i = fscanf(Fi,"nx=%d\n",&nx);
+		fscanf(Fi,"tau=%le\n",&tau);
 		i = fscanf(Fi,"epst=%le\n",&epst);
+		fscanf(Fi,"ntp=%d\n",&ntp); // через сколько итераций выводить информацию
 		fscanf(Fi,"ntm=%d\n",&ntm); // максимальное количество итераций
 		i = fscanf(Fi,"n=%d\n",&n);
 		i = fscanf(Fi,"lp=%d\n",&lp);
 		fclose_m(&Fi);
 		if (argc>1) sscanf(argv[1],"%d",&nx);
 		if (argc>2) sscanf(argv[2],"%d",&n);
+		if (argc>3) sscanf(argv[3],"%d",&ntp); // через сколько итераций выводить информацию
+		if (argc>4) sscanf(argv[4],"%d",&ntm); // максимальное количество итераций
 	}
 
 	if (np>1) {
@@ -186,18 +182,13 @@ int main(int argc, char *argv[])
 			buf.ddata[2] = x0;
 			buf.ddata[3] = a; 
 			buf.ddata[4] = b;
-			//buf.ddata[5] = ua; 
-			//buf.ddata[6] = ub;
-			//buf.ddata[7] = m11;
-			//buf.ddata[8] = m12;
-			//buf.ddata[9] = m21;
-			//buf.ddata[10] = m22;
-			buf.ddata[14] = epst;
-			buf.idata[100] = mode; 
+			buf.ddata[14] = tau;
+			buf.ddata[15] = epst;
 			buf.idata[101] = nx; 
 			buf.idata[102] = n;
-			buf.idata[103] = ntm;
-			buf.idata[104] = lp;
+			buf.idata[103] = ntp;
+			buf.idata[104] = ntm;
+			buf.idata[105] = lp;
 		}
 		MPI_Bcast(buf.ddata,200,MPI_DOUBLE,0,MPI_COMM_WORLD);
 		if (mp>0) {
@@ -206,28 +197,20 @@ int main(int argc, char *argv[])
 			x0 = buf.ddata[2];
 			a  = buf.ddata[3]; 
 			b  = buf.ddata[4];
-			//ua = buf.ddata[5]; 
-			//ub = buf.ddata[6];
-			//m11 = buf.ddata[7];
-			//m12 = buf.ddata[8];
-			//m21 = buf.ddata[9];
-			//m22 = buf.ddata[10];
-			epst = buf.ddata[14];
-			mode = buf.idata[100]; 
+			tau  = buf.ddata[14];
+			epst = buf.ddata[15];
 			nx = buf.idata[101]; 
 			n  = buf.idata[102]; // число итераций с увеличением числа ячеек
-			ntm  = buf.idata[103];
-			lp = buf.idata[104];
+			ntp  = buf.idata[103];
+			ntm  = buf.idata[104];
+			lp   = buf.idata[105];
 		}
 	}
 
-	ua = u(xa); // Значения в крайних точках вычисляем чтобы не передавать в параметрах
-	ub = u(xb); // Значения в крайних точках вычисляем чтобы не передавать в параметрах
-
 	fprintf(Fo,"Netsize: %d, process: %d, system: %s, tick=%12le\n",np,mp,pname,tick);
-	fprintf(Fo,"xa=%le xb=%le x0=%le ua=%le ub=%le a=%le b=%le nx=%d lp=%d mode=%d\n",
-		xa,xb,x0,ua,ub,a,b,nx,lp,mode);
-	//fprintf(Fo,"m11=%le m12=%le m21=%le m22=%le\n",	m11,m12,m21,m22);
+	fprintf(Fo,"xa=%le xb=%le x0=%le ua=%le ub=%le a=%le b=%le nx=%d lp=%d \n",
+		xa,xb,x0,ua,ub,a,b,nx,lp);
+	fprintf(Fo,"nx=%d ntp=%d ntm=%d lp=%d\n",nx,ntp,ntm,lp);
 
 	t1 = MPI_Wtime();
 
@@ -235,24 +218,25 @@ int main(int argc, char *argv[])
 	ncm = (nc-1)<<n; 
 	nc = ncm+1;
 	ncp = 2*(np-1); 
-	ncx = imax(nc,ncp);
+	ncx = imax(nc+1,ncp);
 
-	bsl = (double*)(malloc(round8bytes(sizeof(double)*2)));
-	brl = (double*)(malloc(round8bytes(sizeof(double)*2)));
-	bsr = (double*)(malloc(round8bytes(sizeof(double)*2)));
-	brr = (double*)(malloc(round8bytes(sizeof(double)*2)));
+	bsl = (double*)(malloc(round8bytes(sizeof(double)*3)));
+	brl = (double*)(malloc(round8bytes(sizeof(double)*3)));
+	bsr = (double*)(malloc(round8bytes(sizeof(double)*3)));
+	brr = (double*)(malloc(round8bytes(sizeof(double)*3)));
 
 	xx = (double*)(malloc(round8bytes(sizeof(double)*nc)));
 
-	aa = (double*)(malloc(round8bytes(sizeof(double)*nc)));
-	bb = (double*)(malloc(round8bytes(sizeof(double)*nc)));
-	cc = (double*)(malloc(round8bytes(sizeof(double)*nc)));
-	ff = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
 	kk = (double*)(malloc(round8bytes(sizeof(double)*nc)));
 	kk1= (double*)(malloc(round8bytes(sizeof(double)*nc)));
 	qq = (double*)(malloc(round8bytes(sizeof(double)*nc)));
 
-	uu = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+	aa = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
+	bb = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
+	cc = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
+	ff = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
+
+	uu = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
 	y0 = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
 	y1 = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
 	y2 = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
@@ -260,8 +244,8 @@ int main(int argc, char *argv[])
 	al = (double*)(malloc(round8bytes(sizeof(double)*ncx)));
 
 	if (np>1) {
-		_y2 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
-		_y3 = (double*)(malloc(round8bytes(sizeof(double)*nc)));
+		_y2 = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
+		_y3 = (double*)(malloc(round8bytes(sizeof(double)*(nc+1))));
 		_y4 = (double*)(malloc(round8bytes(sizeof(double)*9*ncp)));
 	}
 
@@ -317,11 +301,11 @@ int main(int argc, char *argv[])
 		for (i=0; i<nc; i++) kk1[i] = k1(xx[i]);
 		for (i=0; i<nc; i++) qq[i] = q(xx[i]);
 
-		tau = 1.0;
+		// Расчёт условия сходимости
 
-		s0 = dabs(kk[0]);for (i=0; i<nc; i++) s0 = dmax(s0,dabs(kk[i]));
-		s1 = dabs(kk1[0]);for (i=0; i<nc; i++) s1 = dmax(s1,dabs(kk1[i]));
-		s2 = dabs(qq[0]);for (i=0; i<nc; i++) s2 = dmax(s2,dabs(qq[i]));
+		s0 = dabs(kk[0]);for (i=0; i<nc; i++) s0 = dmax(s0,dabs(kk[LIDX(i,nc)]));
+		s1 = dabs(kk1[0]);for (i=0; i<nc; i++) s1 = dmax(s1,dabs(kk1[LIDX(i,nc)]));
+		s2 = dabs(qq[0]);for (i=0; i<nc; i++) s2 = dmax(s2,dabs(qq[LIDX(i,nc)]));
 
 		s2 = dmax(s0,s2);
 		s2 = dmax(s1,s2);
@@ -330,19 +314,22 @@ int main(int argc, char *argv[])
 		gt = s1; MPI_Allreduce(&gt,&s1,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 		gt = s2; MPI_Allreduce(&gt,&s2,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
 
-		s0 = dmax(s0,sqrt(s0));
-		s1 = dmax(s1,sqrt(s1));
-		s2 = dmax(s2,sqrt(s2));
+		tau = dmin(tau,0.25*hx/s0);
+		tau = dmin(tau,0.25*hx/s1);
+		tau = dmin(tau,0.5*hx/s2);
 
-		tau = 0.25*hx/s2;
 		gam = tau/hx2;
 
+		// Расчёт коэффициентов системы уравнений
+		//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
+		//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
+		//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
 		if (mp==0) {
 			s0 = kk[0]; 
 			s2 = kk[1];
 			aa[0] = 0.0;
 			bb[0] = gam * 2.0 * s0 * s2 / (s0 + s2);
-			cc[0] = qq[0] + bb[0];
+			cc[0] = qq[0] + tau + bb[0];
 		}
 		else {
 			s0 = kk[0]; 
@@ -350,7 +337,7 @@ int main(int argc, char *argv[])
 			s2 = k(xx[0]+hx);
 			aa[0] = gam * 2.0 * s0 * s1 / (s0 + s1);
 			bb[0] = gam * 2.0 * s0 * s2 / (s0 + s2);
-			cc[0] = qq[0] + aa[0] + bb[0];
+			cc[0] = qq[0] + tau + aa[0] + bb[0];
 		}
 
 		for (i=1; i<ncm; i++) {
@@ -359,7 +346,7 @@ int main(int argc, char *argv[])
 			s2 = kk[i+1];
 			aa[i] = gam * 2.0 * s0 * s1 / (s0 + s1);
 			bb[i] = gam * 2.0 * s0 * s2 / (s0 + s2);
-			cc[i] = qq[i] + aa[i] + bb[i];
+			cc[i] = qq[i] + tau + aa[i] + bb[i];
 		}
 
 		if (mp==np-1) {
@@ -367,7 +354,7 @@ int main(int argc, char *argv[])
 			s1 = kk[ncm-1];
 			aa[ncm] = gam * 2.0 * s0 * s1 / (s0 + s1);
 			bb[ncm] = 0.0;
-			cc[ncm] = qq[ncm] + aa[ncm];
+			cc[ncm] = qq[ncm] + tau + aa[ncm];
 		}
 		else {
 			s0 = kk[ncm]; 
@@ -375,9 +362,8 @@ int main(int argc, char *argv[])
 			s2 = k(xx[ncm]+hx);
 			aa[ncm] = gam * 2.0 * s0 * s1 / (s0 + s1);
 			bb[ncm] = gam * 2.0 * s0 * s2 / (s0 + s2);
-			cc[ncm] = qq[ncm] + aa[ncm] + bb[ncm];
+			cc[ncm] = qq[ncm] + tau + aa[ncm] + bb[ncm];
 		}
-
 
 		sprintf(sname,"%s_%02d_kk.dat",vname,np);
 		OutFun1DP(sname,np,mp,nc,xx,kk);
@@ -399,86 +385,142 @@ int main(int argc, char *argv[])
 		// Задаём начальное значение функции
 		// В качестве начального выбираем ненулевой вектор
 		// поскольку ноль переходит в ноль
-		for(i=0;i<nc;i++) uu[i] = 1; 
-		for(i=0;i<nc+1;i++) y0[i] = 0; 
+		for(i=0;i<nc+1;i++) y0[i] = 1; 
 		for(i=0;i<nc+1;i++) y1[i] = 0; 
 		for(i=0;i<nc+1;i++) y2[i] = 0; 
 
+		// Вычисления являются циклическими поскольку
+		// результаты каждого процесса поступают на вход соседних процессов
+		// организованных циклически и используются ими при следующей итерации вычислений
+		// при этом каждый процесс ведет расчёт своих данных параллельно с другими процессами
+		// Вычисление функции являются прямыми вычислениями 
+		// идущими слева на право на линейке процессов
+		// Пересчёт производных являются обратными вычислениями 
+		// идущими справа на лево на линейке процессов
 		do{
 			ntv++; 
 
-			if(mp==0) uu[0]=1;
-			for(i=0;i<nc;i++) y0[i] = uu[i];
-			y0[nc] = y0[nc-1]+y1[nc-1]*hx;
-
-			if(mode==1&&mp==np-1){
-				// u'(xa) = pi*b*u(xa)
-				// u'(xb) = -pi*b*u(xb)
-				s0=(y0[ncm]+y1[ncm]/pi/b)/2;
-				s1=(pi*b*y0[ncm]+y1[ncm])/2;
-				y0[ncm]=s0;
-				y1[ncm]=s1;
+			// Циклический попарный обмен данными
+			bsl[0]=y0[0]; // Функция
+			bsl[1]=y1[0]; // Производная
+			bsl[2]=y2[0]; // Вторая производная
+			bsr[0]=y0[ncm]; // Функция
+			bsr[1]=y1[ncm]; // Производная
+			bsr[2]=y2[ncm]; // Вторая производная
+			CircleABndExch1D(np, mp, 3, 3, 3, 3, bsl, brl, bsr, brr);
+			if(mp>0) y0[0]=brl[0]; // Вычисление функции являются прямыми вычислениями идущими слева на право на линейке процессов
+			if(mp<np-1){
+				y0[nc]=brr[0];
+				y1[nc]=brr[1];
+				y2[nc]=brr[2];
 			}
 
-			if(mode==1&&mp==0){
-				// u'(xa) = pi*b*u(xa)
-				// u'(xb) = -pi*b*u(xb)
-				s0=(y0[0]+y1[0]/pi/b)/2;
-				s1=(pi*b*y0[0]+y1[0])/2;
-				y0[0]=s0;
-				y1[0]=s1;
+			if(mp==0&&mp==np-1) y0[0]=y0[ncm]=(y0[0]+y0[ncm])/2; // u(xa)==u(xb)
+			else if(mp==0) y0[0]=(y0[0]+brl[0]); // u(xa)==u(xb)
+			else if(mp==np-1) y0[ncm]=(y0[ncm]+brr[0]); // u(xa)==u(xb)
+			if(mp==0&&mp==np-1) y1[0]=y1[ncm]=(y1[0]+y1[ncm])/2; // u'(xa)==u'(xb)
+			else if(mp==0) y1[0]=(y1[0]+brl[1]); // u'(xa)==u'(xb)
+			else if(mp==np-1) y1[ncm]=(y1[ncm]+brr[1]); // u'(xa)==u'(xb)
+
+			//// Вычисляем (пересчитываем) производную
+			//for(i=nc;i-->0;) y1[i] = y1[i+1]-y1[i]*hx;
+
+			//// Ограничения на функцию
+			//if(mp==0&&mp==np-1) y0[0]=y0[ncm]=(y0[0]+y0[ncm])/2; // u(xa)==u(xb)
+			//else if(mp==0) y0[0]=(y0[0]+brl[0]); // u(xa)==u(xb)
+			//else if(mp==np-1) y0[ncm]=(y0[ncm]+brr[0]); // u(xa)==u(xb)
+			//if(mp==0&&mp==np-1) y1[0]=y1[ncm]=(y1[0]+y1[ncm])/2; // u'(xa)==u'(xb)
+			//else if(mp==0) y1[0]=(y1[0]+brl[1]); // u'(xa)==u'(xb)
+			//else if(mp==np-1) y1[ncm]=(y1[ncm]+brr[1]); // u'(xa)==u'(xb)
+
+			// Вычисляем (пересчитываем) функцию
+			for(i=nc;i-->0;) y0[i] = y0[i+1]-y1[i]*hx;
+
+			// Ограничения на функцию
+			if(mp==0&&mp==np-1) y0[0]=y0[ncm]=(y0[0]+y0[ncm])/2; // u(xa)==u(xb)
+			else if(mp==0) y0[0]=(y0[0]+brl[0]); // u(xa)==u(xb)
+			else if(mp==np-1) y0[ncm]=(y0[ncm]+brr[0]); // u(xa)==u(xb)
+			if(mp==0&&mp==np-1) y1[0]=y1[ncm]=(y1[0]+y1[ncm])/2; // u'(xa)==u'(xb)
+			else if(mp==0) y1[0]=(y1[0]+brl[1]); // u'(xa)==u'(xb)
+			else if(mp==np-1) y1[ncm]=(y1[ncm]+brr[1]); // u'(xa)==u'(xb)
+
+			for(m=0;np*m*m<=nx;m++){
+				// Вычисляем правую часть уравнения
+				//               c[i]*y[i]-b[i]*y[i+1]=f[i], i=0
+				//  -a[i]*y[i-1]+c[i]*y[i]-b[i]*y[i+1]=f[i], 0<i<n-1
+				//  -a[i]*y[i-1]+c[i]*y[i]            =f[i], i=n-1
+				for(i=0;i<nc;i++) ff[i] = qq[i]*y0[i] - tau*(kk1[i]*y1[i] + kk[i]*y2[i]);
+
+				// Хотя бы одна точка должна быть зафиксирована поскольку оператор линейный, 
+				// то есть умноженное на константу решение тоже является решением
+				// задаём ведущий элемент
+				{ aa[nc]=0; bb[nc]=0; cc[nc]=1; ff[nc]=y0[nc]; }
+				if(mp==0) { aa[0]=0; bb[0]=0; cc[0]=1; ff[0]=1; }
+				if(mp==np-1) { aa[ncm]=0; bb[ncm]=0; cc[ncm]=1; ff[ncm]=y0[ncm]; }
+
+				// Решаем систему уравнений методом прогонки
+				// Решение - следующее значение функции
+				ier = prog_right(nc+1,aa,bb,cc,ff,al,uu);
+
+				for(i=0;i<nc;i++) y0[i] = uu[i];
+				y1[nc] = y1[ncm]+y2[ncm]*hx;
+				y0[nc] = y0[ncm]+y1[ncm]*hx;
+
+				if(mp==0&&mp==np-1) y0[0]=y0[ncm]=(y0[0]+y0[ncm])/2; // u(xa)==u(xb)
+				else if(mp==0) y0[0]=(y0[0]+brl[0]); // u(xa)==u(xb)
+				else if(mp==np-1) y0[ncm]=(y0[ncm]+brr[0]); // u(xa)==u(xb)
+				if(mp==0&&mp==np-1) y1[0]=y1[ncm]=(y1[0]+y1[ncm])/2; // u'(xa)==u'(xb)
+				else if(mp==0) y1[0]=(y1[0]+brl[1]); // u'(xa)==u'(xb)
+				else if(mp==np-1) y1[ncm]=(y1[ncm]+brr[1]); // u'(xa)==u'(xb)
+
+				// Вычисляем (пересчитываем) производную 
+				for(i=0;i<=nc;i++) y1[i] = (y0[i+1]-y0[i])/hx;
+
+				// Ограничения на функцию
+				if(mp==0&&mp==np-1) y0[0]=y0[ncm]=(y0[0]+y0[ncm])/2; // u(xa)==u(xb)
+				else if(mp==0) y0[0]=(y0[0]+brl[0]); // u(xa)==u(xb)
+				else if(mp==np-1) y0[ncm]=(y0[ncm]+brr[0]); // u(xa)==u(xb)
+				if(mp==0&&mp==np-1) y1[0]=y1[ncm]=(y1[0]+y1[ncm])/2; // u'(xa)==u'(xb)
+				else if(mp==0) y1[0]=(y1[0]+brl[1]); // u'(xa)==u'(xb)
+				else if(mp==np-1) y1[ncm]=(y1[ncm]+brr[1]); // u'(xa)==u'(xb)
+
+				// Вычисляем (пересчитываем) вторую производную 
+				for(i=0;i<=nc;i++) y2[i] = (y1[i+1]-y1[i])/hx;
 			}
-
-			bsl[0]=y0[0];
-			bsl[1]=y1[0];
-			bsr[0]=y0[ncm]; 
-			bsr[1]=y1[ncm];
-			CircleABndExch1D(np, mp, 2, 2, 2, 2, bsl, brl, bsr, brr);
-			if(mode==2&&mp==0) y0[0]=(y0[0]+brl[0]); // u(xa)==u(xb)
-			if(mode==2&&mp==0) y1[0]=(y1[0]+brl[1]); // u'(xa)==u'(xb)
-			if(mode==2&&mp==np-1) y0[ncm]=(y0[ncm]+brr[0]); // u(xa)==u(xb)
-			if(mode==2&&mp==np-1) y1[ncm]=(y1[ncm]+brr[1]); // u'(xa)==u'(xb)
-			y0[nc]=brr[0];
-			y1[nc]=brr[1];
-
-			if(mode==1)for(i=nc;i-->0;) y1[i] = (y0[i+1]-y0[i])/hx;
-			if(mode==2)for(i=0;i<nc+1;i++) y1[i] = (y0[i+1]-y0[i])/hx;
-
-			for(i=0;i<nc;i++) y2[i] = (y1[i+1]-y1[i])/hx;
-			for(i=0;i<nc;i++) ff[i] = qq[i]*y0[i] - tau*(kk1[i]*y1[i] + kk[i]*y2[i]);
-
-			if (np<2) ier = prog_right(nc,aa,bb,cc,ff,al,uu);
-			else      ier = prog_rightpm(np,mp,nc,0,aa,bb,cc,ff,al,uu,_y2,_y3,_y4);
 
 			t2 = MPI_Wtime() - t1;
 
-			// Вычисляем отличие от реальной функции
-			gt = 0.0;
-			for (i=0; i<nc; i++) {
-				s1 = u(xx[i]); s2 = dabs(s1-uu[i]); gt = dmax(gt,s2);
-				if (lp>0)
-					fprintf(Fo,"i=%8d x=%12le y=%12le u=%12le gt=%12le\n",
-					i,xx[i],uu[i],s1,gt);
-			}
+			if(((ntv*ntv)<ntp)||((ntv%ntp)==0)) {
+				// Вычисляем отличие от реальной функции
+				gt = 0.0;
+				for (i=0; i<nc; i++) {
+					s1 = u(xx[i]); 
+					s2 = dabs(s1-uu[i]); 
+					gt = dmax(gt,s2);
+				}
 
-			if (np>1) {
-				s1 = gt; 
-				MPI_Allreduce(&s1,&gt,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
-			}
-			if (mp==0) fprintf(stderr,"tau=%le ntv=%d nx=%d t1=%le dmax=%le\n",tau,ntv,nx<<it,t2,gt);
-			fprintf(Fo,"t1=%le dmax=%le\n",t1,gt);
+				if (np>1) {
+					s1 = gt; 
+					MPI_Allreduce(&s1,&gt,1,MPI_DOUBLE,MPI_MAX,MPI_COMM_WORLD);
+				}
+				if (mp==0) fprintf(stderr,"tau=%le ntv=%d nx=%d t1=%le dmax=%le\n",tau,ntv,nx<<it,t2,gt);
+				fprintf(Fo,"t1=%le dmax=%le\n",t1,gt);
 
+				if (lp>0) {
+					fprintf(Fo,"ntv=%d gt=%le\n",ntv,gt);
+					sprintf(sname,"%s_%02d_y0.dat",vname,np);
+					OutFun1DP(sname,np,mp,nc,xx,y0);
+					sprintf(sname,"%s_%02d_y1.dat",vname,np);
+					OutFun1DP(sname,np,mp,nc,xx,y1);
+					sprintf(sname,"%s_%02d_y2.dat",vname,np);
+					OutFun1DP(sname,np,mp,nc,xx,y2);
+					sprintf(sname,"%s_%02d_ff.dat",vname,np);
+					OutFun1DP(sname,np,mp,nc,xx,ff);
+					fflush(Fo); 
+				}
+			}
 			// повторяем если большое расхождение с текущим значением в качестве начального
 		} while ((ntv<ntm) && (gt>epst));
-
-		sprintf(sname,"%s_%02d_y0.dat",vname,np);
-		OutFun1DP(sname,np,mp,nc,xx,y0);
-		sprintf(sname,"%s_%02d_y1.dat",vname,np);
-		OutFun1DP(sname,np,mp,nc,xx,y1);
-		sprintf(sname,"%s_%02d_y2.dat",vname,np);
-		OutFun1DP(sname,np,mp,nc,xx,y2);
-		sprintf(sname,"%s_%02d_ff.dat",vname,np);
-		OutFun1DP(sname,np,mp,nc,xx,ff);
 
 		sprintf(sname,"%s_%02d_%02d.dat",vname,np,it);
 		OutFun1DP(sname,np,mp,nc,xx,uu);

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Triangle.UnitTest", "Triang
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "ProNina2", "ProNina2\ProNina2.vcxproj", "{33B15635-6A85-431D-A530-3F54EC3206C3}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Kolobylina1", "Kolobylina1\Kolobylina1.vcxproj", "{CF753FE3-353B-4678-9BFD-37026010CF8F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -89,6 +91,24 @@ Global
 		{33B15635-6A85-431D-A530-3F54EC3206C3}.Release|Win32.Build.0 = Release|Win32
 		{33B15635-6A85-431D-A530-3F54EC3206C3}.Release|x64.ActiveCfg = Release|x64
 		{33B15635-6A85-431D-A530-3F54EC3206C3}.Release|x64.Build.0 = Release|x64
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Debug|Any CPU.ActiveCfg = Debug|Win32
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Debug|ARM.ActiveCfg = Debug|ARM
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Debug|ARM.Build.0 = Debug|ARM
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Debug|Mixed Platforms.ActiveCfg = Debug|Win32
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Debug|Mixed Platforms.Build.0 = Debug|Win32
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Debug|Win32.ActiveCfg = Debug|Win32
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Debug|Win32.Build.0 = Debug|Win32
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Debug|x64.ActiveCfg = Debug|x64
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Debug|x64.Build.0 = Debug|x64
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Release|Any CPU.ActiveCfg = Release|Win32
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Release|ARM.ActiveCfg = Release|ARM
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Release|ARM.Build.0 = Release|ARM
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Release|Mixed Platforms.ActiveCfg = Release|x64
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Release|Mixed Platforms.Build.0 = Release|x64
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Release|Win32.ActiveCfg = Release|Win32
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Release|Win32.Build.0 = Release|Win32
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Release|x64.ActiveCfg = Release|x64
+		{CF753FE3-353B-4678-9BFD-37026010CF8F}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

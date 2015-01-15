@@ -15,7 +15,6 @@
 //       + tau*(r(y[j](i+1))*y[j](i+1)-r(y[j](i-1))*y[j](i-1))/2
 
 
-
 //  u(x,0) = g0(x), u(xa,t) = g1(t), u(xb,t) = g2(t) 
 //
 //
@@ -228,7 +227,7 @@ int main(int argc, char *argv[])
 	// Цикл с разными шагами сетки
 	for(it=0;it<=n;it++) {
 		// k1 k3 q0 взяты из конспекта семинара. 
-		// здесь они используются для рассчёта сходимости
+		// здесь они используются для расчёта сходимости
 		u10 = u1 - u0; 
 		hx = (xb-xa)/(nx<<it); hx2 = hx * hx;
 		tau = dmin(tau,tmax/ntm);
@@ -354,18 +353,6 @@ int main(int argc, char *argv[])
 			if (debug&0x04) { fprintf(Fo,"\t\tEnd restore\n");fflush(Fo); }
 			if (debug&0x08) { fprintf(Fo,"\t\tEnd algo\n");fflush(Fo); }
 
-			sprintf(sname,"%s_%02d_y0.dat",vname,np);
-			OutFun1DP(sname,np,mp,nc,xx,y0);
-			sprintf(sname,"%s_%02d_y1.dat",vname,np);
-			OutFun1DP(sname,np,mp,nc,xx,y1);
-			sprintf(sname,"%s_%02d_aa.dat",vname,np);
-			OutFun1DP(sname,np,mp,nc,xx,aa);
-			sprintf(sname,"%s_%02d_bb.dat",vname,np);
-			OutFun1DP(sname,np,mp,nc,xx,bb);
-			sprintf(sname,"%s_%02d_cc.dat",vname,np);
-			OutFun1DP(sname,np,mp,nc,xx,bb);
-			sprintf(sname,"%s_%02d_ff.dat",vname,np);
-			OutFun1DP(sname,np,mp,nc,xx,ff);
 
 			// КОНЕЦ АЛГОРИТМА ШАГА
 
@@ -388,13 +375,24 @@ int main(int argc, char *argv[])
 					t2 = MPI_Wtime() - t1;
 					fprintf(stderr,"ntv=%d tv=%le tau=%le gt=%le tcpu=%le\n",ntv,tv,tau,gt,t2);
 				}
+
+				if (lp>0) {
+					fprintf(Fo,"ntv=%d tv=%le gt=%le\n",ntv,tv,gt);
+					sprintf(sname,"%s_%02d_y0.dat",vname,np);
+					OutFun1DP(sname,np,mp,nc,xx,y0);
+					sprintf(sname,"%s_%02d_y1.dat",vname,np);
+					OutFun1DP(sname,np,mp,nc,xx,y1);
+					sprintf(sname,"%s_%02d_aa.dat",vname,np);
+					OutFun1DP(sname,np,mp,nc,xx,aa);
+					sprintf(sname,"%s_%02d_bb.dat",vname,np);
+					OutFun1DP(sname,np,mp,nc,xx,bb);
+					sprintf(sname,"%s_%02d_cc.dat",vname,np);
+					OutFun1DP(sname,np,mp,nc,xx,bb);
+					sprintf(sname,"%s_%02d_ff.dat",vname,np);
+					OutFun1DP(sname,np,mp,nc,xx,ff);
+					fflush(Fo); 
+				}
 			}
-			//if (lp>0) {
-			//	fprintf(Fo,"ntv=%d tv=%le gt=%le\n",ntv,tv,gt);
-			//	for (i=0; i<nc; i++)
-			//		fprintf(Fo,"i=%8d x=%12le y1=%12le\n",(i1+i),xx[i],y1[i]);
-			//	fflush(Fo); 
-			//}
 
 		} while ((ntv<ntm) && (gt>epst));
 
